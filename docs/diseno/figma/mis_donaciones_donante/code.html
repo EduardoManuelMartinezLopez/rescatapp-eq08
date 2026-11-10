@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html lang="es-MX"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#f7f9ff;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface": "#f7f9ff", "tertiary-fixed": "#ffdad5", "primary-fixed-dim": "#4ae183", "on-tertiary-fixed-variant": "#910807", "error-container": "#ffdad6", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb783", "on-secondary": "#ffffff", "outline-variant": "#bbcbbb", "on-secondary-container": "#663100", "tertiary": "#b4271d", "primary-fixed": "#6bfe9c", "on-secondary-fixed": "#301400", "on-error": "#ffffff", "on-primary-fixed-variant": "#005228", "on-primary": "#ffffff", "primary-container": "#2ecc71", "surface-container-low": "#edf4ff", "surface-dim": "#c9dcf3", "error": "#ba1a1a", "tertiary-container": "#ff9687", "on-primary-fixed": "#00210c", "on-tertiary": "#ffffff", "secondary-fixed": "#ffdcc5", "background": "#f7f9ff", "tertiary-fixed-dim": "#ffb4a9", "primary": "#006d37", "on-secondary-fixed-variant": "#713700", "outline": "#6c7b6d", "surface-container-high": "#d9eaff", "on-tertiary-fixed": "#410000", "secondary": "#944a00", "on-surface-variant": "#3d4a3e", "secondary-container": "#fc8f34", "on-tertiary-container": "#8e0505", "inverse-surface": "#203243", "surface-container": "#e3efff", "on-error-container": "#93000a", "surface-variant": "#d1e4fb", "on-background": "#091d2e", "inverse-primary": "#4ae183", "surface-container-highest": "#d1e4fb", "inverse-on-surface": "#e8f2ff", "on-surface": "#091d2e", "on-primary-container": "#005027", "surface-tint": "#006d37", "surface-bright": "#f7f9ff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "gutter": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "margin": "1rem" }, "fontFamily": { "label-sm": ["Inter"], "headline-lg": ["Inter"], "headline-xl": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "headline-md": ["Inter"], "headline-sm": ["Inter"], "label-lg": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "700"}], "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}], "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800"}], "body-md": ["15px", {"lineHeight": "22px", "fontWeight": "400"}], "label-md": ["14px", {"lineHeight": "18px", "fontWeight": "600"}], "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}], "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "700"}], "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}], "label-lg": ["16px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "700"}], "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary/20"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 max-w-[480px] mx-auto px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="RescatApp Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UWCW_Dki9kqsUh8ALglWUZfTyRh7iniUkztWv9E-dtT6ayX96YWjocwxGZeYzexSEYPsvfcKKIuyBYUffkpXjpDJ5whBSHNroSV5CvdRqp-iNBnMwT7z6IHDSy45ydZ1IJVnbXVgXOeT3CugQgfkCn7-hy9VUJyfQNhsfCcu1lG0-g3Iif2jXlJqT--y3-6cbOCwRj6hZ3tRq6JXomu4tXWLJPck6sLtMg1lNhT6ukwQ"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">RescatApp</span><span class="font-body-sm text-body-sm text-on-surface-variant font-medium">•</span><span class="font-label-sm text-label-sm text-on-surface-variant line-clamp-1">Rescates Disponibles</span></div><div class="flex items-center gap-1 mt-0.5"><span class="material-symbols-outlined text-[12px] text-primary leading-none">location_on</span><span class="font-label-sm text-[11px] leading-tight text-on-surface-variant font-semibold tracking-normal">Oaxaca de Juárez</span></div></div></div><div class="flex items-center gap-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col w-full max-w-[480px] mx-auto px-margin pt-16 pb-24 bg-surface"><div class="flex flex-col w-full pb-8">
+<!-- Encabezado de la pantalla con rol donante -->
+<div class="flex flex-col gap-1 mb-5">
+<div class="flex items-center justify-between">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Mis donaciones</h1>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+        4 registros
+      </span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary">storefront</span>
+<span class="font-medium">Restaurante / Negocio donante en Oaxaca</span>
+</div>
+</div>
+<!-- Resumen de impacto comunitario rápido -->
+<div class="grid grid-cols-2 gap-3 mb-5">
+<div class="p-3.5 bg-surface-container-low rounded-xl flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
+<span class="material-symbols-outlined text-[22px]">eco</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">63 kg</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight truncate">Alimento rescatado</span>
+</div>
+</div>
+<div class="p-3.5 bg-surface-container-low rounded-xl flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed shrink-0">
+<span class="material-symbols-outlined text-[22px]">handshake</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">12</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight truncate">Comunidades apoyadas</span>
+</div>
+</div>
+</div>
+<!-- Filtros rápidos por estado de donación -->
+<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none" id="estado-filtros">
+<button class="filter-chip px-3.5 py-1.5 rounded-full bg-on-surface text-surface font-label-sm text-label-sm whitespace-nowrap shadow-sm" data-filter="todos" type="button">
+      Todos (4)
+    </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-high transition-colors" data-filter="activos" type="button">
+      Activos (2)
+    </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-high transition-colors" data-filter="finalizados" type="button">
+      Completados (2)
+    </button>
+</div>
+<!-- Lista de donaciones comunitarias -->
+<div class="flex flex-col gap-3.5" id="donaciones-lista">
+<!-- Tarjeta 1: Pan tradicional y teleras (Publicada) -->
+<article class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(44,62,80,0.08),0_1px_3px_0_rgba(44,62,80,0.04)] flex flex-col gap-3 relative transition-all active:scale-[0.99]" data-categoria="activos">
+<div class="flex items-start justify-between gap-3">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-0.5">Panadería de barrio</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-snug">Pan tradicional y teleras</h2>
+</div>
+<span class="h-7 px-3 rounded-full bg-primary-container/20 text-on-primary-container font-label-sm text-label-sm inline-flex items-center justify-center shrink-0">
+          Publicada
+        </span>
+</div>
+<div class="flex items-center gap-2 py-1">
+<div class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">scale</span>
+          18 kilos
+        </div>
+<span class="text-on-surface-variant text-[13px]">• Porción estimada: 45 personas</span>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5 text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span>Caduca hoy: 20:30 hrs</span>
+</div>
+<button class="h-10 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-sm text-label-sm flex items-center gap-1 transition-colors" type="button">
+<span>Gestionar</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</article>
+<!-- Tarjeta 2: Guisados del día en contenedores térmicos (Reservada) -->
+<article class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(44,62,80,0.08),0_1px_3px_0_rgba(44,62,80,0.04)] flex flex-col gap-3 relative transition-all active:scale-[0.99]" data-categoria="activos">
+<div class="flex items-start justify-between gap-3">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-0.5">Comida caliente</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-snug">Guisados del día en contenedores térmicos</h2>
+</div>
+<span class="h-7 px-3 rounded-full bg-secondary-container/25 text-on-secondary-container font-label-sm text-label-sm inline-flex items-center justify-center shrink-0">
+          Reservada
+        </span>
+</div>
+<!-- Indicador de apartado comunitario -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface">Apartado por: <strong class="font-label-sm text-label-sm text-on-surface">Comedor San José</strong></span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Voluntario en camino a pie</span>
+</div>
+</div>
+<div class="flex items-center gap-2 py-0.5">
+<div class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">scale</span>
+          12 kilos
+        </div>
+<span class="text-on-surface-variant text-[13px]">• 4 contenedores</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5 text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span>Caduca hoy: 18:00 hrs</span>
+</div>
+<button class="h-10 px-3.5 rounded-lg bg-primary-container text-on-primary-container font-label-sm text-label-sm font-bold flex items-center gap-1 shadow-sm active:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+<span>Entregar</span>
+</button>
+</div>
+</article>
+<!-- Tarjeta 3: Frutas frescas de temporada (Recogida) -->
+<article class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(44,62,80,0.08),0_1px_3px_0_rgba(44,62,80,0.04)] flex flex-col gap-3 relative transition-all" data-categoria="finalizados">
+<div class="flex items-start justify-between gap-3">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-0.5">Perecederos frescos</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-snug">Frutas frescas de temporada (plátano, manzana)</h2>
+</div>
+<span class="h-7 px-3 rounded-full bg-inverse-surface text-inverse-on-surface font-label-sm text-label-sm inline-flex items-center justify-center shrink-0">
+          Recogida
+        </span>
+</div>
+<div class="flex items-center gap-2">
+<div class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">scale</span>
+          25 kilos
+        </div>
+<span class="text-on-surface-variant text-[13px]">• Huacal completo</span>
+</div>
+<div class="flex items-center justify-between pt-1 text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px] text-primary">check_circle</span>
+<span class="font-medium text-on-surface">Recogido hoy a las 11:30 hrs</span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-tight">Completado</span>
+</div>
+</article>
+<!-- Tarjeta 4: Baguettes de centeno (Expirada) -->
+<article class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(44,62,80,0.08),0_1px_3px_0_rgba(44,62,80,0.04)] flex flex-col gap-3 relative opacity-85 transition-all" data-categoria="finalizados">
+<div class="flex items-start justify-between gap-3">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-0.5">Panadería artesanal</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-snug">Baguettes de centeno</h2>
+</div>
+<span class="h-7 px-3 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm inline-flex items-center justify-center shrink-0">
+          Expirada
+        </span>
+</div>
+<div class="flex items-center gap-2">
+<div class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-outline">scale</span>
+          8 kilos
+        </div>
+<span class="text-on-surface-variant text-[13px]">• No fue reclamado a tiempo</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5 text-error font-body-sm text-body-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">event_busy</span>
+<span>Caducó ayer</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm underline transition-colors" onclick="this.closest('article').style.display='none'" type="button">
+          Archivar
+        </button>
+</div>
+</article>
+</div>
+<!-- Mensaje de motivación comunitaria -->
+<div class="mt-6 p-4 rounded-xl bg-surface-container-low flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant m-0">
+      Gracias por reducir la merma en Oaxaca. Tus donaciones directas evitan que comida digna termine en el relleno sanitario.
+    </p>
+</div>
+<!-- Botón de acción flotante (FAB táctil) -->
+<aside class="sticky bottom-4 self-end z-30 mt-4 mr-0">
+<button class="h-[52px] px-5 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg flex items-center gap-2 shadow-[0_10px_30px_-4px_rgba(44,62,80,0.22)] active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[24px]">add</span>
+<span>+ Nueva donación</span>
+</button>
+</aside>
+</div>
+<script>
+  // Filtro ligero e intuitivo de las tarjetas de donaciones
+  (function () {
+    const chips = document.querySelectorAll('.filter-chip');
+    const cards = document.querySelectorAll('#donaciones-lista > article');
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        // Estilos activos
+        chips.forEach(c => {
+          c.classList.remove('bg-on-surface', 'text-surface', 'shadow-sm');
+          c.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        chip.classList.add('bg-on-surface', 'text-surface', 'shadow-sm');
+        chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+
+        const filter = chip.getAttribute('data-filter');
+        cards.forEach(card => {
+          const category = card.getAttribute('data-categoria');
+          if (filter === 'todos') {
+            card.style.display = 'flex';
+          } else if (category === filter) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_12px_rgba(44,62,80,0.06)]" data-active-classes="text-primary font-bold"><div class="max-w-[480px] mx-auto flex items-center justify-around h-16 px-space-xs"><a aria-current="page" class="flex flex-col items-center justify-center min-w-[64px] min-h-[48px] px-space-xs transition-colors text-primary font-bold" data-path="rescates-disponibles" href="#"><span class="material-symbols-outlined text-[24px]">lunch_dining</span><span class="font-label-sm text-label-sm mt-0.5">Rescates</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[48px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="mapa-de-donativos" href="#"><span class="material-symbols-outlined text-[24px]">map</span><span class="font-label-sm text-label-sm mt-0.5">Mapa</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[48px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="publicar-alimento" href="#"><span class="material-symbols-outlined text-[24px]">add_circle</span><span class="font-label-sm text-label-sm mt-0.5">Publicar</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[48px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="mis-apartados" href="#"><span class="material-symbols-outlined text-[24px]">inventory_2</span><span class="font-label-sm text-label-sm mt-0.5">Apartados</span></a><a class="flex flex-col items-center justify-center min-w-[64px] min-h-[48px] px-space-xs text-on-surface-variant hover:text-on-surface transition-colors" data-path="perfil-comunitario" href="#"><span class="material-symbols-outlined text-[24px]">account_circle</span><span class="font-label-sm text-label-sm mt-0.5">Perfil</span></a></div></nav></body></html>

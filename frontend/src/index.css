@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Paleta clara (Stitch) y oscura. Los valores son "R G B" para que Tailwind pueda aplicar transparencias. */
+:root {
+  --c-surface: 247 249 255;
+  --c-surface-dim: 201 220 243;
+  --c-surface-bright: 247 249 255;
+  --c-surface-container-lowest: 255 255 255;
+  --c-surface-container-low: 237 244 255;
+  --c-surface-container: 227 239 255;
+  --c-surface-container-high: 217 234 255;
+  --c-surface-container-highest: 209 228 251;
+  --c-on-surface: 9 29 46;
+  --c-on-surface-variant: 61 74 62;
+  --c-inverse-surface: 32 50 67;
+  --c-inverse-on-surface: 232 242 255;
+  --c-outline: 108 123 109;
+  --c-outline-variant: 187 203 187;
+  --c-surface-tint: 0 109 55;
+  --c-primary: 0 109 55;
+  --c-on-primary: 255 255 255;
+  --c-primary-container: 46 204 113;
+  --c-on-primary-container: 0 80 39;
+  --c-inverse-primary: 74 225 131;
+  --c-secondary: 148 74 0;
+  --c-on-secondary: 255 255 255;
+  --c-secondary-container: 252 143 52;
+  --c-on-secondary-container: 102 49 0;
+  --c-tertiary: 180 39 29;
+  --c-on-tertiary: 255 255 255;
+  --c-tertiary-container: 255 150 135;
+  --c-on-tertiary-container: 142 5 5;
+  --c-error: 186 26 26;
+  --c-on-error: 255 255 255;
+  --c-error-container: 255 218 214;
+  --c-on-error-container: 147 0 10;
+  --c-primary-fixed: 107 254 156;
+  --c-primary-fixed-dim: 74 225 131;
+  --c-on-primary-fixed: 0 33 12;
+  --c-on-primary-fixed-variant: 0 82 40;
+  --c-secondary-fixed: 255 220 197;
+  --c-secondary-fixed-dim: 255 183 131;
+  --c-on-secondary-fixed: 48 20 0;
+  --c-on-secondary-fixed-variant: 113 55 0;
+  --c-tertiary-fixed: 255 218 213;
+  --c-tertiary-fixed-dim: 255 180 169;
+  --c-on-tertiary-fixed: 65 0 0;
+  --c-on-tertiary-fixed-variant: 145 8 7;
+  --c-background: 247 249 255;
+  --c-on-background: 9 29 46;
+  --c-surface-variant: 209 228 251;
+  color-scheme: light;
+}
+.dark {
+  --c-background: 12 21 17;
+  --c-surface: 12 21 17;
+  --c-surface-dim: 12 21 17;
+  --c-surface-bright: 42 58 50;
+  --c-surface-container-lowest: 18 31 25;
+  --c-surface-container-low: 22 36 29;
+  --c-surface-container: 27 43 35;
+  --c-surface-container-high: 33 51 42;
+  --c-surface-container-highest: 40 59 49;
+  --c-surface-variant: 40 59 49;
+  --c-on-surface: 228 239 232;
+  --c-on-background: 228 239 232;
+  --c-on-surface-variant: 169 189 177;
+  --c-outline: 123 143 131;
+  --c-outline-variant: 47 68 58;
+  --c-inverse-surface: 228 239 232;
+  --c-inverse-on-surface: 12 21 17;
+  --c-primary: 74 225 131;
+  --c-on-primary: 0 33 12;
+  --c-secondary: 255 183 131;
+  --c-on-secondary: 77 35 0;
+  --c-error: 255 180 171;
+  --c-on-error: 105 0 5;
+  --c-error-container: 147 0 10;
+  --c-on-error-container: 255 218 214;
+  color-scheme: dark;
+}
+
+body { @apply bg-background text-on-surface font-sans antialiased transition-colors duration-300; }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+.leaflet-container { font-family: Inter, system-ui, sans-serif; }
+/* Mapa en modo oscuro: se invierten los mosaicos de OpenStreetMap */
+.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.7); }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl font-bold transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100; }
+  .btn-primary { @apply btn bg-primary-container text-on-primary-container hover:brightness-95; }
+  .btn-alert { @apply btn bg-secondary text-on-secondary hover:brightness-110; }
+  .btn-ghost { @apply btn border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-low; }
+  .btn-danger { @apply btn border border-error text-error bg-surface-container-lowest hover:bg-error/10; }
+  .input { @apply w-full min-h-[48px] px-4 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline transition focus:outline-none focus:ring-2 focus:ring-primary-container; }
+  .card { @apply bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-sm transition; }
+  .card-hover { @apply hover:shadow-md hover:-translate-y-0.5; }
+}
+
+/* Quienes prefieren menos movimiento no ven animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+/* Al imprimir (Guardar como PDF) se ocultan menús y botones */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+}
+@media print {
+  html, body { background: #fff !important; color: #111 !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  @page { margin: 14mm; }
+}
