@@ -62,6 +62,15 @@ export function crearGlobo(canvas, opciones = {}) {
   }
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { medir(); if (reducir) dibujar(performance.now()); }) : null;
   ro?.observe(canvas); medir();
+    const reiniciar = () => {
+    if (document.hidden) return;
+    medir();
+    if (reducir) { dibujar(performance.now()); return; }
+    cancelAnimationFrame(raf); previo = performance.now(); raf = requestAnimationFrame(bucle);
+  };
+  document.addEventListener('visibilitychange', reiniciar);
+  window.addEventListener('pageshow', reiniciar);
+  window.addEventListener('orientationchange', reiniciar);
 
   function proy(v, R, cx, cy, elev = 1) {
     const l = rot; // rotación en longitud
@@ -71,6 +80,7 @@ export function crearGlobo(canvas, opciones = {}) {
   }
 
   function dibujar(ahora) {
+    if (!w || !h) { medir(); if (!w || !h) return; }
     const t = (ahora - t0) / 1000;
     const R = Math.min(w, h) * 0.4, cx = w / 2, cy = h / 2;
     ctx.clearRect(0, 0, w, h);
@@ -136,7 +146,7 @@ export function crearGlobo(canvas, opciones = {}) {
 
   let previo = performance.now();
   function bucle(ahora) {
-    const dt = Math.min(0.05, (ahora - previo) / 1000); previo = ahora;
+    const dt = Math.max(0, Math.min(0.05, (ahora - previo) / 1000)); previo = ahora;
     if (estado === 'listo') { // se acerca suavemente a Oaxaca
       const k = 1 - Math.pow(0.002, dt);
       let dr = ((objetivoRot - rot + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
@@ -154,7 +164,7 @@ export function crearGlobo(canvas, opciones = {}) {
 
   return {
     setEstado(e) { estado = e; if (reducir) { rot = objetivoRot; tilt = objetivoTilt; dibujar(performance.now()); } },
-    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); },
+    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); document.removeEventListener('visibilitychange', reiniciar); window.removeEventListener('pageshow', reiniciar); window.removeEventListener('orientationchange', reiniciar); },
     _fijar(r, tl) { rot = r; tilt = tl; dibujar(performance.now()); }, // para pruebas
   };
 }
