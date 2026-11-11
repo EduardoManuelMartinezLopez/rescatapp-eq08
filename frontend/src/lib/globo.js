@@ -71,6 +71,8 @@ export function crearGlobo(canvas, opciones = {}) {
   document.addEventListener('visibilitychange', reiniciar);
   window.addEventListener('pageshow', reiniciar);
   window.addEventListener('orientationchange', reiniciar);
+  window.addEventListener('load', reiniciar);
+  const reintentos = [150, 600, 1500, 3000].map((ms) => setTimeout(reiniciar, ms));
 
   function proy(v, R, cx, cy, elev = 1) {
     const l = rot; // rotación en longitud
@@ -156,7 +158,7 @@ export function crearGlobo(canvas, opciones = {}) {
       velocidad += (meta - velocidad) * (1 - Math.pow(0.05, dt));
       rot += velocidad * dt;
     }
-    dibujar(ahora);
+    try { dibujar(ahora); } catch (e) { console.error(e); }
     raf = requestAnimationFrame(bucle);
   }
   if (reducir) { rot = objetivoRot; tilt = objetivoTilt; dibujar(performance.now()); }
@@ -164,7 +166,7 @@ export function crearGlobo(canvas, opciones = {}) {
 
   return {
     setEstado(e) { estado = e; if (reducir) { rot = objetivoRot; tilt = objetivoTilt; dibujar(performance.now()); } },
-    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); document.removeEventListener('visibilitychange', reiniciar); window.removeEventListener('pageshow', reiniciar); window.removeEventListener('orientationchange', reiniciar); },
+    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); document.removeEventListener('visibilitychange', reiniciar); window.removeEventListener('pageshow', reiniciar); window.removeEventListener('orientationchange', reiniciar);  window.removeEventListener('load', reiniciar); reintentos.forEach(clearTimeout);},
     _fijar(r, tl) { rot = r; tilt = tl; dibujar(performance.now()); }, // para pruebas
   };
 }
