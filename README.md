@@ -70,4 +70,4 @@ La aplicación abre en `http://localhost:5173`.
 - API: importar `backend/postman` en Postman y ejecutar la colección.
 
 ## Estado
-Proyecto terminado y probado en entorno local. Pendiente para subir a un servidor, Entrega: 30 de noviembre de 2026.
+Proyecto terminado y probado en entorno local. Pendiente para subir a un servidor, Entrega: 27 de noviembre de 2026.
