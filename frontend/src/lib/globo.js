@@ -36,16 +36,22 @@ function slerp(a, b, t) {
   return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2];
 }
 
+const CACHE_PUNTOS = {};
+
 export function crearGlobo(canvas, opciones = {}) {
   const ctx = canvas.getContext('2d');
   const reducir = opciones.reducirMovimiento ?? (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   // Puntos de tierra (rejilla de Fibonacci filtrada)
   const puntos = [];
-  const N = 11000;
-  for (let i = 0; i < N; i++) {
-    const lat = Math.asin(1 - (2 * (i + 0.5)) / N) / RAD;
-    const lon = ((i * 137.508) % 360) - 180;
-    if (esTierra(lon, lat)) puntos.push({ lat, lon });
+  const N = (typeof window !== 'undefined' && window.innerWidth < 700) ? 6500 : 11000; // menos puntos en celulares: arranca más rápido
+  if (CACHE_PUNTOS[N]) puntos.push(...CACHE_PUNTOS[N]); // se calculan una sola vez y se reutilizan
+  else {
+    for (let i = 0; i < N; i++) {
+      const lat = Math.asin(1 - (2 * (i + 0.5)) / N) / RAD;
+      const lon = ((i * 137.508) % 360) - 180;
+      if (esTierra(lon, lat)) puntos.push({ lat, lon });
+    }
+    CACHE_PUNTOS[N] = puntos.slice();
   }
   const o = vec(OAXACA.lat, OAXACA.lon);
   const destinos = NODOS.map((n) => ({ ...n, v: vec(n.lat, n.lon) }));
@@ -60,8 +66,19 @@ export function crearGlobo(canvas, opciones = {}) {
     canvas.width = Math.max(1, Math.round(w * dpr)); canvas.height = Math.max(1, Math.round(h * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { medir(); if (reducir) dibujar(performance.now()); }) : null;
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { medir(); dibujar(performance.now()); }) : null;
   ro?.observe(canvas); medir();
+    const reiniciar = () => {
+    if (document.hidden) return;
+    medir(); dibujar(performance.now()); // medir() borra el lienzo: se vuelve a dibujar de inmediato
+    if (reducir) return;
+    cancelAnimationFrame(raf); previo = performance.now(); raf = requestAnimationFrame(bucle);
+  };
+  document.addEventListener('visibilitychange', reiniciar);
+  window.addEventListener('pageshow', reiniciar);
+  window.addEventListener('orientationchange', reiniciar);
+  window.addEventListener('load', reiniciar);
+  const reintentos = [150, 600, 1500, 3000].map((ms) => setTimeout(reiniciar, ms));
 
   function proy(v, R, cx, cy, elev = 1) {
     const l = rot; // rotación en longitud
@@ -71,6 +88,7 @@ export function crearGlobo(canvas, opciones = {}) {
   }
 
   function dibujar(ahora) {
+    if (!w || !h) { medir(); if (!w || !h) return; }
     const t = (ahora - t0) / 1000;
     const R = Math.min(w, h) * 0.4, cx = w / 2, cy = h / 2;
     ctx.clearRect(0, 0, w, h);
@@ -136,7 +154,7 @@ export function crearGlobo(canvas, opciones = {}) {
 
   let previo = performance.now();
   function bucle(ahora) {
-    const dt = Math.min(0.05, (ahora - previo) / 1000); previo = ahora;
+    const dt = Math.max(0, Math.min(0.05, (ahora - previo) / 1000)); previo = ahora;
     if (estado === 'listo') { // se acerca suavemente a Oaxaca
       const k = 1 - Math.pow(0.002, dt);
       let dr = ((objetivoRot - rot + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
@@ -146,15 +164,15 @@ export function crearGlobo(canvas, opciones = {}) {
       velocidad += (meta - velocidad) * (1 - Math.pow(0.05, dt));
       rot += velocidad * dt;
     }
-    dibujar(ahora);
+    try { dibujar(ahora); } catch (e) { console.error(e); }
     raf = requestAnimationFrame(bucle);
   }
   if (reducir) { rot = objetivoRot; tilt = objetivoTilt; dibujar(performance.now()); }
-  else raf = requestAnimationFrame(bucle);
+  else { try { dibujar(performance.now()); } catch (e) { console.error(e); } raf = requestAnimationFrame(bucle); } // primer cuadro ya, sin esperar la animación
 
   return {
     setEstado(e) { estado = e; if (reducir) { rot = objetivoRot; tilt = objetivoTilt; dibujar(performance.now()); } },
-    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); },
+    destruir() { cancelAnimationFrame(raf); ro?.disconnect(); document.removeEventListener('visibilitychange', reiniciar); window.removeEventListener('pageshow', reiniciar); window.removeEventListener('orientationchange', reiniciar);  window.removeEventListener('load', reiniciar); reintentos.forEach(clearTimeout);},
     _fijar(r, tl) { rot = r; tilt = tl; dibujar(performance.now()); }, // para pruebas
   };
 }

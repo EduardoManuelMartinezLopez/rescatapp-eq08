@@ -38,13 +38,13 @@ export default function Campana() {
   async function todas() { await api('/notifications/read-all', { method: 'PATCH' }).catch(() => {}); cargar(); }
 
   return (
-    <div className="relative" ref={caja}>
+    <div className="sm:relative" ref={caja}>
       <button onClick={() => { setAbierta(!abierta); if (!abierta) cargar(); }} className="relative w-11 h-11 rounded-xl hover:bg-surface-container grid place-items-center" aria-label={`Notificaciones (${datos.no_leidas} sin leer)`}>
         <Icon name="notifications" className={`text-[26px] ${sacude ? 'animate-campana' : ''}`} />
         {datos.no_leidas > 0 && <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary text-on-secondary text-[11px] font-bold grid place-items-center animate-pop">{datos.no_leidas > 9 ? '9+' : datos.no_leidas}</span>}
       </button>
       {abierta && (
-        <div className="absolute right-0 mt-2 w-[min(92vw,360px)] card shadow-xl overflow-hidden animate-pop z-[1500]">
+        <div className="absolute left-3 right-3 top-full mt-2 sm:left-auto sm:right-0 sm:top-auto sm:w-[360px] card shadow-xl overflow-hidden animate-pop z-[1500]">
           <div className="flex justify-between items-center px-4 py-3 border-b border-outline-variant/60">
             <b>Notificaciones</b>
             {datos.no_leidas > 0 && <button onClick={todas} className="text-sm font-semibold text-primary">Marcar todas</button>}

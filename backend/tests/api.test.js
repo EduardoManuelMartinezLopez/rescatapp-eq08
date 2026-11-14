@@ -224,11 +224,15 @@ describe('Administrador', () => {
     const n = await api('GET', '/api/notifications', { token: reg.datos.token });
     assert.ok(n.datos.notificaciones.some((x) => x.tipo === 'validacion'));
   });
-  test('reporte CSV con BOM y encabezados', async () => {
+    test('reporte CSV con BOM y encabezados', async () => {
     assert.equal((await api('GET', '/api/admin/reports/donations.csv', { token: tDonante })).status, 403);
-    const r = await api('GET', '/api/admin/reports/donations.csv?desde=2020-01-01', { token: tAdmin });
+    const r = await fetch(base + '/api/admin/reports/donations.csv?desde=2020-01-01', {
+      headers: { Authorization: `Bearer ${tAdmin}` },
+    });
     assert.equal(r.status, 200);
-    assert.ok(r.tipo.includes('text/csv'));
-    assert.ok(r.datos.startsWith('﻿ID,Alimento'));
+    assert.ok((r.headers.get('content-type') || '').includes('text/csv'));
+    const bytes = Buffer.from(await r.arrayBuffer());
+    assert.ok(bytes.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])));
+    assert.ok(bytes.toString('utf8').slice(1).startsWith('ID,Alimento'));
   });
 });

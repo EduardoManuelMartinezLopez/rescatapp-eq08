@@ -1,6 +1,6 @@
 // Service worker de RescatApp: guarda lo estático para abrir más rápido.
 // NUNCA guarda llamadas a /api (los datos siempre vienen frescos del servidor).
-const CACHE = 'rescatapp-v1';
+const CACHE = 'rescatapp-v2';
 const BASE = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
