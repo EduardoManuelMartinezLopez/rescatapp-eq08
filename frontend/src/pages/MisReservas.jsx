@@ -29,7 +29,7 @@ export default function MisReservas() {
     cargar();
   }
 
-  useResaltar('r', 'res', !cargando, () => setFiltro('todas'));
+  useResaltar('r', 'res', !cargando, setFiltro);
   const visibles = reservas.filter((r) => filtro === 'todas' || r.estado === filtro);
   const activas = reservas.filter((r) => r.estado === 'activa').length;
 

@@ -31,7 +31,7 @@ router.post('/', asyncHandler(async (req, res) => {
       'INSERT INTO calificaciones (id_reserva, id_autor, id_destino, estrellas, comentario) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [idReserva, yo, destino, estrellas, comentario || null]);
     await notificar(pool, destino, 'calificacion', `Recibiste una calificación de ${estrellas} ★ por "${r.titulo}".`,
-      yo === r.id_receptor ? `/mis-donaciones?d=${r.id_donacion}` : `/mis-reservas?r=${idReserva}`);
+      yo === r.id_receptor ? `/mis-donaciones?d=${r.id_donacion}&f=recogida` : `/mis-reservas?r=${idReserva}&f=completada`);
     res.status(201).json({ mensaje: 'Gracias por tu calificación.', calificacion: ins.rows[0] });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ya calificaste esta reserva.' });

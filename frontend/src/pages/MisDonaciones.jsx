@@ -31,7 +31,7 @@ export default function MisDonaciones() {
   const confirmar = (d) => accion(api(`/reservations/${d.id_reserva}/pickup`, { method: 'PATCH' }));
   const retirar = (d) => window.confirm('¿Retirar esta donación?') && accion(api(`/donations/${d.id_donacion}`, { method: 'DELETE' }));
 
-  useResaltar('d', 'don', !cargando, () => setFiltro('todas'));
+  useResaltar('d', 'don', !cargando, setFiltro);
   const visibles = lista.filter((d) => filtro === 'todas' || d.estado === filtro);
   const kilos = lista.filter((d) => d.estado === 'recogida').reduce((s, d) => s + d.kilos, 0);
 

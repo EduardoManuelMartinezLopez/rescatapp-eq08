@@ -35,7 +35,7 @@ router.post('/book', requerirRol('receptor'), asyncHandler(async (req, res) => {
     const ins = await client.query(
       'INSERT INTO reservas (id_donacion, id_receptor) VALUES ($1,$2) RETURNING *', [idDonacion, req.usuario.id]);
     await client.query("UPDATE donaciones SET estado = 'reservada' WHERE id_donacion = $1", [idDonacion]);
-    await notificar(client, d.id_donante, 'reservada', `${u.rows[0].nombre} apartó tu donación "${d.titulo}".`, `/mis-donaciones?d=${d.id_donacion}`);
+    await notificar(client, d.id_donante, 'reservada', `${u.rows[0].nombre} apartó tu donación "${d.titulo}".`, `/mis-donaciones?d=${d.id_donacion}&f=reservada`);
     await client.query('COMMIT');
     res.status(201).json({ mensaje: 'Donación apartada. Recógela en el horario indicado.', reserva: ins.rows[0] });
   } catch (err) {
@@ -80,7 +80,7 @@ router.patch('/:id/pickup', requerirRol('donante'), asyncHandler(async (req, res
     if (r.estado !== 'activa') { await client.query('ROLLBACK'); return res.status(409).json({ error: 'La reserva ya no está activa.' }); }
     await client.query("UPDATE reservas SET estado = 'completada', fecha_recogida = NOW() WHERE id_reserva = $1", [id]);
     await client.query("UPDATE donaciones SET estado = 'recogida' WHERE id_donacion = $1", [r.id_donacion]);
-    await notificar(client, r.id_receptor, 'recogida', `Se confirmó la recolección de "${r.titulo}". ¡Califica la experiencia!`, `/mis-reservas?r=${id}`);
+    await notificar(client, r.id_receptor, 'recogida', `Se confirmó la recolección de "${r.titulo}". ¡Califica la experiencia!`, `/mis-reservas?r=${id}&f=completada`);
     await client.query('COMMIT');
     res.json({ mensaje: 'Recolección confirmada. ¡Gracias por rescatar alimento!' });
   } catch (err) {
@@ -110,7 +110,7 @@ router.patch('/:id/cancel', requerirRol('receptor'), asyncHandler(async (req, re
     await client.query(
       `UPDATE donaciones SET estado = CASE WHEN fecha_caducidad > NOW() THEN 'publicada' ELSE 'expirada' END
         WHERE id_donacion = $1`, [r.id_donacion]);
-    await notificar(client, r.id_donante, 'cancelada', `Se canceló la reserva de "${r.titulo}". La donación volvió a estar disponible.`, `/mis-donaciones?d=${r.id_donacion}`);
+    await notificar(client, r.id_donante, 'cancelada', `Se canceló la reserva de "${r.titulo}". La donación volvió a estar disponible.`, `/mis-donaciones?d=${r.id_donacion}&f=publicada`);
     await client.query('COMMIT');
     res.json({ mensaje: 'Reserva cancelada. La donación vuelve a estar disponible.' });
   } catch (err) {
