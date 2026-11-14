@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useResaltar } from '../useResaltar.js';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, FotoDonacion, Icon, Vacio } from '../components/ui.jsx';
 import CalificarModal from '../components/CalificarModal.jsx';
@@ -28,6 +29,7 @@ export default function MisReservas() {
     cargar();
   }
 
+  useResaltar('r', 'res', !cargando, () => setFiltro('todas'));
   const visibles = reservas.filter((r) => filtro === 'todas' || r.estado === filtro);
   const activas = reservas.filter((r) => r.estado === 'activa').length;
 
@@ -49,7 +51,7 @@ export default function MisReservas() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {visibles.map((r, i) => (
-            <article key={r.id_reserva} style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }} className="card card-hover animate-fade-up p-5 space-y-2">
+            <article id={`res-${r.id_reserva}`} key={r.id_reserva} style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }} className="card card-hover animate-fade-up p-5 space-y-2">
               <FotoDonacion id={r.id_donacion} tiene={r.tiene_foto} />
               <div className="flex justify-between items-start gap-2">
                 <p className="text-xs font-bold text-primary uppercase">{r.donante_nombre}</p>

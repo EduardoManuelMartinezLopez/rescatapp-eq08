@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useResaltar } from '../useResaltar.js';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, FotoDonacion, Icon, Vacio } from '../components/ui.jsx';
@@ -30,6 +31,7 @@ export default function MisDonaciones() {
   const confirmar = (d) => accion(api(`/reservations/${d.id_reserva}/pickup`, { method: 'PATCH' }));
   const retirar = (d) => window.confirm('¿Retirar esta donación?') && accion(api(`/donations/${d.id_donacion}`, { method: 'DELETE' }));
 
+  useResaltar('d', 'don', !cargando, () => setFiltro('todas'));
   const visibles = lista.filter((d) => filtro === 'todas' || d.estado === filtro);
   const kilos = lista.filter((d) => d.estado === 'recogida').reduce((s, d) => s + d.kilos, 0);
 
@@ -54,7 +56,7 @@ export default function MisDonaciones() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {visibles.map((d, i) => (
-            <article key={d.id_donacion} style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }} className="card card-hover animate-fade-up p-5 space-y-2">
+            <article id={`don-${d.id_donacion}`} key={d.id_donacion} style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }} className="card card-hover animate-fade-up p-5 space-y-2">
               <FotoDonacion id={d.id_donacion} tiene={d.tiene_foto} />
               <div className="flex justify-between items-start gap-2">
                 <p className="text-xs font-bold text-primary uppercase">{d.categoria}</p>

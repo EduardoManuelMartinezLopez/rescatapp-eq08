@@ -16,18 +16,18 @@ async function expirarVencidas() {
           FROM donaciones d
          WHERE d.id_donacion = r.id_donacion AND r.estado = 'activa' AND r.aviso_enviado = FALSE
            AND d.fecha_caducidad > NOW() AND d.fecha_caducidad <= NOW() + INTERVAL '1 hour'
-        RETURNING r.id_receptor, d.titulo)
+        RETURNING r.id_receptor, r.id_reserva, d.titulo)
       INSERT INTO notificaciones (id_usuario, tipo, mensaje, enlace)
-      SELECT id_receptor, 'por_vencer', 'Tu reserva "' || titulo || '" vence en menos de 1 hora.', '/mis-reservas'
+      SELECT id_receptor, 'por_vencer', 'Tu reserva "' || titulo || '" vence en menos de 1 hora.', '/mis-reservas?r=' || id_reserva
         FROM por_vencer`);
 
     await client.query(`
       INSERT INTO notificaciones (id_usuario, tipo, mensaje, enlace)
-      SELECT d.id_donante, 'expirada', 'Tu donación "' || d.titulo || '" venció sin ser recogida.', '/mis-donaciones'
+      SELECT d.id_donante, 'expirada', 'Tu donación "' || d.titulo || '" venció sin ser recogida.', '/mis-donaciones?d=' || d.id_donacion
         FROM donaciones d WHERE d.estado IN ('publicada','reservada') AND d.fecha_caducidad <= NOW()`);
     await client.query(`
       INSERT INTO notificaciones (id_usuario, tipo, mensaje, enlace)
-      SELECT r.id_receptor, 'expirada', 'Tu reserva "' || d.titulo || '" venció y fue cancelada.', '/mis-reservas'
+      SELECT r.id_receptor, 'expirada', 'Tu reserva "' || d.titulo || '" venció y fue cancelada.', '/mis-reservas?r=' || r.id_reserva
         FROM reservas r JOIN donaciones d ON d.id_donacion = r.id_donacion
        WHERE r.estado = 'activa' AND d.estado IN ('publicada','reservada') AND d.fecha_caducidad <= NOW()`);
 

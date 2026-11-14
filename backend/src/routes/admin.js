@@ -68,7 +68,7 @@ router.patch('/organizations/:id', asyncHandler(async (req, res) => {
       RETURNING id_usuario, nombre, correo, estado_validacion`, [estado, id]);
   if (!rows[0]) return res.status(404).json({ error: 'La organización receptora no existe.' });
   if (estado === 'aprobada') await notificar(pool, id, 'validacion', '¡Tu organización fue aprobada! Ya puedes apartar donaciones.', '/mapa');
-  if (estado === 'rechazada') await notificar(pool, id, 'validacion', 'Tu organización no fue aprobada. Contacta al administrador para más información.', null);
+  if (estado === 'rechazada') await notificar(pool, id, 'validacion', 'Tu organización no fue aprobada. Contacta al administrador para más información.', '/perfil');
   res.json({ mensaje: 'Estado actualizado.', organizacion: rows[0] });
 }));
 

@@ -18,7 +18,7 @@ router.post('/', asyncHandler(async (req, res) => {
   if (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5) return res.status(400).json({ error: 'Las estrellas deben ser un número del 1 al 5.' });
 
   const { rows } = await pool.query(
-    `SELECT r.id_reserva, r.estado, r.id_receptor, d.id_donante, d.titulo
+    `SELECT r.id_reserva, r.id_donacion, r.estado, r.id_receptor, d.id_donante, d.titulo
        FROM reservas r JOIN donaciones d ON d.id_donacion = r.id_donacion WHERE r.id_reserva = $1`, [idReserva]);
   const r = rows[0];
   if (!r) return res.status(404).json({ error: 'La reserva no existe.' });
@@ -30,7 +30,8 @@ router.post('/', asyncHandler(async (req, res) => {
     const ins = await pool.query(
       'INSERT INTO calificaciones (id_reserva, id_autor, id_destino, estrellas, comentario) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [idReserva, yo, destino, estrellas, comentario || null]);
-    await notificar(pool, destino, 'calificacion', `Recibiste una calificación de ${estrellas} ★ por "${r.titulo}".`, null);
+    await notificar(pool, destino, 'calificacion', `Recibiste una calificación de ${estrellas} ★ por "${r.titulo}".`,
+      yo === r.id_receptor ? `/mis-donaciones?d=${r.id_donacion}` : `/mis-reservas?r=${idReserva}`);
     res.status(201).json({ mensaje: 'Gracias por tu calificación.', calificacion: ins.rows[0] });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ya calificaste esta reserva.' });
