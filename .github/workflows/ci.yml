@@ -1,0 +1,39 @@
+# Integración continua: en cada push se ejecutan las 23 pruebas de la API y se compila la interfaz.
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rescatapp_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: secreto-para-ci
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Cargar el esquema en la base de pruebas
+        run: psql -h localhost -U postgres -d rescatapp_test -f database/rescatapp_database.sql
+      - name: Pruebas de la API
+        working-directory: backend
+        run: |
+          npm install
+          npm test
+      - name: Compilar la interfaz
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build

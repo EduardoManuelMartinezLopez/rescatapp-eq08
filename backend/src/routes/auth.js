@@ -6,7 +6,7 @@ const pool = require('../db');
 const { autenticar } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errores');
 const { texto, validarRegistro } = require('../utils/validar');
-const { enviarCorreo } = require('../services/correo');
+const { enviarCorreo, plantillaHtml } = require('../services/correo');
 const { notificar } = require('../services/notificaciones');
 
 const router = express.Router();
@@ -132,6 +132,12 @@ router.post('/forgot', asyncHandler(async (req, res) => {
       await enviarCorreo({
         para: correo, asunto: 'Restablece tu contraseña de RescatApp',
         texto: `Hola ${rows[0].nombre}:\n\nPara crear una nueva contraseña abre este enlace (vence en 30 minutos):\n${enlace}\n\nSi no lo pediste tú, ignora este mensaje.`,
+        html: plantillaHtml({
+          titulo: 'Restablece tu contraseña',
+          parrafos: [`Hola ${rows[0].nombre}:`, 'Recibimos una solicitud para crear una nueva contraseña en tu cuenta. El enlace vence en 30 minutos y solo se puede usar una vez.'],
+          boton: { texto: 'Crear nueva contraseña', url: enlace },
+          pie: 'Si no lo pediste tú, ignora este mensaje: tu contraseña actual no cambiará.',
+        }),
       });
     } catch (e) { console.error('[CORREO] No se pudo enviar:', e.message); }
     if (process.env.DEV_SHOW_RESET_LINK === 'true') respuesta.enlace_dev = enlace;

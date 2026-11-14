@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "correo:probar": "node scripts/probar-correo.js"
   },
   "license": "ISC",
   "dependencies": {
