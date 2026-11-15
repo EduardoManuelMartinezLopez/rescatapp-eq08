@@ -18,7 +18,7 @@ Archivos de esta carpeta:
 ## Valores de producción en `backend/.env`
 ```
 JWT_SECRET=<cadena larga y aleatoria propia>
-FRONTEND_URL=https://TU_DOMINIO
+FRONTEND_URL=https://TU_DOMINIO   # en producción: https://rescatapp.online
 DEV_SHOW_RESET_LINK=false
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465

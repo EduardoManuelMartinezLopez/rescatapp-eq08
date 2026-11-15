@@ -6,7 +6,7 @@ Conecta **donantes** (negocios), **receptores** (comedores y bancos de alimentos
 Proyecto integrador – Gestión de Proyectos de Software (SCG-1009) – Instituto Tecnológico de Oaxaca – Equipo 8, grupo 8SC.
 Autor: Eduardo Manuel Martinez Lopez. Docente: Adelina Martinez Nieto.
 
-**Aplicación en línea:** https://18-190-146-42.sslip.io
+**Aplicación en línea:** https://rescatapp.online
 
 ## Funcionalidades
 - Registro e inicio de sesión con correo y contraseña, o con Google. Recuperación de contraseña.
@@ -103,12 +103,12 @@ La aplicación corre en una instancia AWS EC2 (región us-east-2, Ubuntu 24.04, 
 - **nginx** sirve el frontend compilado (`npm run build`) desde `/var/www/rescatapp` y redirige `/api/` al backend en `127.0.0.1:3000`.
 - **PM2** mantiene el backend (`rescatapp-api`) y lo reinicia con el sistema.
 - **PostgreSQL 16** local en la misma instancia.
-- **HTTPS** con certificado de Let's Encrypt (certbot) sobre el dominio `18-190-146-42.sslip.io`.
+- **HTTPS** con certificado de Let's Encrypt (certbot) sobre el dominio `rescatapp.online` (y `www.rescatapp.online`).
 
 En producción `DEV_SHOW_RESET_LINK` debe estar en `false`, y `JWT_SECRET` y las credenciales de la base deben ser propias y no coincidir con las de desarrollo.
 
 ## Limitaciones conocidas
-- El correo de recuperación de contraseña requiere configurar el servidor SMTP en el `.env` (ver `deploy/README.md`); sin esa configuración, el mensaje solo se imprime en la terminal.
+- El correo de recuperación de contraseña usa el servidor SMTP configurado en el `.env` (ver `deploy/README.md`); sin esa configuración, el mensaje solo se imprime en la terminal. En producción está activo.
 - Las métricas de usabilidad (SUS) y de tiempo de respuesta quedan pendientes de medición.
 
 ## Estado
