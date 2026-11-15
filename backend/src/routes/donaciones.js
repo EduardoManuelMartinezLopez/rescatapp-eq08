@@ -126,8 +126,9 @@ router.delete('/:id', requerirRol('donante'), asyncHandler(async (req, res) => {
   try {
     await pool.query('DELETE FROM donaciones WHERE id_donacion = $1', [id]);
   } catch (err) {
-    if (err.code === '23503') return res.status(409).json({ error: 'La donación ya tiene historial de reservas y no puede borrarse.' });
-    throw err;
+    if (err.code !== '23503') throw err;
+    // Ya tuvo una reserva (cancelada): se conserva el historial y solo se saca del mapa pasándola a "expirada"
+    await pool.query("UPDATE donaciones SET estado = 'expirada', fecha_caducidad = LEAST(fecha_caducidad, NOW()) WHERE id_donacion = $1", [id]);
   }
   res.json({ mensaje: 'Donación retirada.' });
 }));
