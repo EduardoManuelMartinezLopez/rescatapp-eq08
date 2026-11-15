@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export const Icon = ({ name, className = '' }) => (
   <span className={`material-symbols-outlined ${className}`} aria-hidden="true">{name}</span>
@@ -94,14 +95,15 @@ export function Modal({ titulo, onCerrar, children }) {
     document.addEventListener('keydown', tecla); ref.current?.focus();
     return () => document.removeEventListener('keydown', tecla);
   }, [onCerrar]);
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-4 bg-black/50 animate-fade-in" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={titulo} className="card w-full max-w-md p-6 space-y-4 animate-pop outline-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50 animate-fade-in overflow-y-auto" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
+      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={titulo} className="card w-full max-w-md p-6 space-y-4 animate-pop outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto">
         <div className="flex justify-between items-center"><h2 className="text-xl font-extrabold">{titulo}</h2>
           <button onClick={onCerrar} className="w-10 h-10 rounded-full hover:bg-surface-container" aria-label="Cerrar"><Icon name="close" /></button></div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
