@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, Estrellas, Vacio } from '../components/ui.jsx';
 import { useActualizar } from '../useActualizar.js';
 import { fechaCorta } from '../utils.js';
 
 export default function AdminOrganizaciones() {
+  const [params, setParams] = useSearchParams();
   const [estado, setEstado] = useState('pendiente');
+  // Si llegan desde un aviso (?f=pendiente|aprobada|rechazada) se abre esa pestaña
+  useEffect(() => {
+    const f = params.get('f');
+    if (f && ['pendiente', 'aprobada', 'rechazada'].includes(f)) setEstado(f);
+    if (f) setParams({}, { replace: true });
+  }, [params, setParams]);
   const [lista, setLista] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [aviso, setAviso] = useState(null);

@@ -3,6 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { Icon } from './ui.jsx';
 import { fechaCorta } from '../utils.js';
+import { useAuth } from '../context/AuthContext.jsx';
+
+// A dónde lleva cada tipo de aviso: la sección correcta con su filtro activado y, si se conoce, la tarjeta exacta.
+// Se decide por el tipo y el rol (no solo por el enlace guardado), así también funcionan los avisos antiguos.
+function destino(n, rol) {
+  let d = null, r = null;
+  try { const u = new URL(n.enlace || '', 'http://x'); d = u.searchParams.get('d'); r = u.searchParams.get('r'); } catch { /* sin enlace */ }
+  const don = (f) => `/mis-donaciones?f=${f}${d ? `&d=${d}` : ''}`;
+  const res = (f) => `/mis-reservas?f=${f}${r ? `&r=${r}` : ''}`;
+  switch (n.tipo) {
+    case 'reservada': return don('reservada');
+    case 'cancelada': return don('publicada');
+    case 'recogida': return res('completada');
+    case 'por_vencer': return res('activa');
+    case 'expirada': return rol === 'donante' ? don('expirada') : res('cancelada');
+    case 'calificacion': return rol === 'donante' ? don('recogida') : res('completada');
+    case 'nueva_donacion': return n.enlace || '/mapa';
+    case 'org_pendiente': return '/admin/organizaciones?f=pendiente';
+    case 'validacion': return n.enlace || '/perfil';
+    default: return n.enlace || null;
+  }
+}
 
 const ICONOS = { reservada: 'shopping_basket', recogida: 'check_circle', cancelada: 'event_busy', expirada: 'timer_off', por_vencer: 'schedule',
   nueva_donacion: 'volunteer_activism', validacion: 'verified_user', org_pendiente: 'pending_actions', calificacion: 'star' };
@@ -10,6 +32,7 @@ const ICONOS = { reservada: 'shopping_basket', recogida: 'check_circle', cancela
 // Campana de notificaciones: consulta al servidor cada 15 segundos
 export default function Campana() {
   const nav = useNavigate();
+  const { usuario } = useAuth();
   const [abierta, setAbierta] = useState(false);
   const [datos, setDatos] = useState({ no_leidas: 0, notificaciones: [] });
   const [sacude, setSacude] = useState(false);
@@ -33,7 +56,8 @@ export default function Campana() {
   async function abrir(n) {
     setAbierta(false);
     if (!n.leida) { await api(`/notifications/${n.id_notificacion}/read`, { method: 'PATCH' }).catch(() => {}); cargar(); }
-    if (n.enlace) nav(n.enlace);
+    const ruta = destino(n, usuario?.rol);
+    if (ruta) nav(ruta);
   }
   async function todas() { await api('/notifications/read-all', { method: 'PATCH' }).catch(() => {}); cargar(); }
 

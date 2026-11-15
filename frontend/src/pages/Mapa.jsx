@@ -73,11 +73,12 @@ export default function Mapa() {
   // Si se llega desde una notificación (/mapa?d=ID) se selecciona esa donación
   useEffect(() => {
     const id = params.get('d');
-    if (!id || lista.length === 0) return;
+    if (!id || cargando) return;
     const d = lista.find((x) => String(x.id_donacion) === id);
     if (d) setSel(d);
+    else setAviso({ tipo: 'aviso', texto: 'Esa donación ya no está disponible (la apartaron, la retiraron o venció).' });
     setParams({}, { replace: true });
-  }, [lista, params, setParams]);
+  }, [lista, cargando, params, setParams]);
 
   async function apartar(d) {
     setApartando(true); setAviso(null);

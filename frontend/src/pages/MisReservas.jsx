@@ -3,6 +3,7 @@ import { useResaltar } from '../useResaltar.js';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, FotoDonacion, Icon, Vacio } from '../components/ui.jsx';
 import CalificarModal from '../components/CalificarModal.jsx';
+import ConfirmarModal from '../components/ConfirmarModal.jsx';
 import Impacto from '../components/Impacto.jsx';
 import { useActualizar } from '../useActualizar.js';
 import { fechaCorta, rutaLink, tiempoRestante, verHorario, waLink } from '../utils.js';
@@ -13,6 +14,7 @@ export default function MisReservas() {
   const [filtro, setFiltro] = useState('todas');
   const [aviso, setAviso] = useState(null);
   const [calificando, setCalificando] = useState(null);
+  const [cancelando, setCancelando] = useState(null);
 
   const cargar = useCallback(async () => {
     try { setReservas((await api('/reservations/mine')).reservas); }
@@ -23,7 +25,6 @@ export default function MisReservas() {
   useActualizar(cargar, 15000);
 
   async function cancelar(r) {
-    if (!window.confirm('¿Cancelar esta reserva? La donación volverá a estar disponible para otras organizaciones.')) return;
     try { setAviso({ tipo: 'ok', texto: (await api(`/reservations/${r.id_reserva}/cancel`, { method: 'PATCH' })).mensaje }); }
     catch (e) { setAviso({ tipo: 'error', texto: e.message }); }
     cargar();
@@ -70,7 +71,7 @@ export default function MisReservas() {
                       ? <a className="btn-ghost" href={waLink(r.donante_telefono, `Hola, soy de RescatApp. Voy por "${r.titulo}".`)} target="_blank" rel="noreferrer"><Icon name="chat" /> WhatsApp</a>
                       : <span className="btn-ghost opacity-50 pointer-events-none">Sin teléfono</span>}
                   </div>
-                  <button className="btn-danger w-full" onClick={() => cancelar(r)}>Cancelar reserva</button>
+                  <button className="btn-danger w-full" onClick={() => setCancelando(r)}>Cancelar reserva</button>
                 </>
               )}
               {r.estado === 'completada' && <p className="text-sm text-on-surface-variant">Recogida el {fechaCorta(r.fecha_recogida)}</p>}
@@ -82,6 +83,8 @@ export default function MisReservas() {
           ))}
         </div>
       )}
+      {cancelando && <ConfirmarModal titulo="¿Cancelar esta reserva?" texto="La donación volverá a estar disponible para otras organizaciones." textoBoton="Sí, cancelar" peligro
+        onConfirmar={() => cancelar(cancelando)} onCerrar={() => setCancelando(null)} />}
       {calificando && <CalificarModal reserva={calificando.id_reserva} a={calificando.donante_nombre} onCerrar={() => setCalificando(null)}
         onListo={() => { setCalificando(null); setAviso({ tipo: 'ok', texto: '¡Gracias por tu calificación!' }); cargar(); }} />}
     </div>

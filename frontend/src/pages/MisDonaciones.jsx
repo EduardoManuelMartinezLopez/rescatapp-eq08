@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, FotoDonacion, Icon, Vacio } from '../components/ui.jsx';
 import CalificarModal from '../components/CalificarModal.jsx';
+import ConfirmarModal from '../components/ConfirmarModal.jsx';
 import Impacto from '../components/Impacto.jsx';
 import { useActualizar } from '../useActualizar.js';
 import { fechaCorta, tiempoRestante, verHorario, waLink } from '../utils.js';
@@ -14,6 +15,7 @@ export default function MisDonaciones() {
   const [filtro, setFiltro] = useState('todas');
   const [aviso, setAviso] = useState(null);
   const [calificando, setCalificando] = useState(null);
+  const [retirando, setRetirando] = useState(null);
 
   const cargar = useCallback(async () => {
     try { setLista((await api('/donations/mine')).donaciones); }
@@ -29,7 +31,7 @@ export default function MisDonaciones() {
     cargar();
   }
   const confirmar = (d) => accion(api(`/reservations/${d.id_reserva}/pickup`, { method: 'PATCH' }));
-  const retirar = (d) => window.confirm('¿Retirar esta donación?') && accion(api(`/donations/${d.id_donacion}`, { method: 'DELETE' }));
+  const retirar = (d) => setRetirando(d);
 
   useResaltar('d', 'don', !cargando, setFiltro);
   const visibles = lista.filter((d) => filtro === 'todas' || d.estado === filtro);
@@ -83,6 +85,8 @@ export default function MisDonaciones() {
           ))}
         </div>
       )}
+      {retirando && <ConfirmarModal titulo="¿Retirar esta donación?" texto={`"${retirando.titulo}" dejará de mostrarse a las organizaciones.`} textoBoton="Sí, retirar" peligro
+        onConfirmar={() => accion(api(`/donations/${retirando.id_donacion}`, { method: 'DELETE' }))} onCerrar={() => setRetirando(null)} />}
       {calificando && <CalificarModal reserva={calificando.id_reserva} a={calificando.receptor_nombre} onCerrar={() => setCalificando(null)}
         onListo={() => { setCalificando(null); setAviso({ tipo: 'ok', texto: '¡Gracias por tu calificación!' }); cargar(); }} />}
     </div>
