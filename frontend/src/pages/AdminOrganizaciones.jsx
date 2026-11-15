@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { Alerta, Cargando, Chip, Estrellas, Vacio } from '../components/ui.jsx';
@@ -7,11 +7,14 @@ import { fechaCorta } from '../utils.js';
 
 export default function AdminOrganizaciones() {
   const [params, setParams] = useSearchParams();
-  const [estado, setEstado] = useState('pendiente');
+  const VALIDOS = ['pendiente', 'aprobada', 'rechazada'];
+  const [estado, setEstado] = useState(() => (VALIDOS.includes(params.get('f')) ? params.get('f') : 'pendiente'));
+  const estadoActual = useRef(estado);
+  estadoActual.current = estado;
   // Si llegan desde un aviso (?f=pendiente|aprobada|rechazada) se abre esa pestaña
   useEffect(() => {
     const f = params.get('f');
-    if (f && ['pendiente', 'aprobada', 'rechazada'].includes(f)) setEstado(f);
+    if (f && VALIDOS.includes(f)) setEstado(f);
     if (f) setParams({}, { replace: true });
   }, [params, setParams]);
   const [lista, setLista] = useState([]);
@@ -19,7 +22,10 @@ export default function AdminOrganizaciones() {
   const [aviso, setAviso] = useState(null);
 
   const cargar = useCallback(async () => {
-    try { setLista((await api(`/admin/organizations?estado=${estado}`)).organizaciones); }
+    try {
+      const d = await api(`/admin/organizations?estado=${estado}`);
+      if (estadoActual.current === estado) setLista(d.organizaciones); // ignora respuestas de una pestaña anterior
+    }
     catch (e) { setAviso({ tipo: 'error', texto: e.message }); }
     finally { setCargando(false); }
   }, [estado]);
