@@ -4,7 +4,8 @@ import { validarCorreo, validarNombre, validarPassword, validarTelefono } from '
 import { api } from '../api.js';
 import { useAuth, rutaInicial } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
-import { Alerta, BotonTema, Campo, CampoPassword, CampoTelefono, Icon, IndicadorPassword } from '../components/ui.jsx';
+import { Alerta, BotonTema, Campo, CampoPassword, CampoTelefono, Icon, IndicadorPassword, Modal } from '../components/ui.jsx';
+import { ContenidoPrivacidad } from './Privacidad.jsx';
 import SelectorUbicacion from '../components/SelectorUbicacion.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
 
@@ -19,6 +20,7 @@ export default function Registro() {
   const { tema, alternar } = useTema();
   const [f, setF] = useState({ rol: 'donante', nombre: '', correo: '', telefono: '', direccion: '', password: '', password2: '', acepta: false });
   const [errs, setErrs] = useState({});
+  const [verAviso, setVerAviso] = useState(false);
   const [error, setError] = useState('');
   const [punto, setPunto] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -95,7 +97,7 @@ export default function Registro() {
         <div>
           <label className="flex gap-3 items-start cursor-pointer">
             <input type="checkbox" className="mt-1 w-6 h-6 accent-primary shrink-0" checked={f.acepta} onChange={(e) => { setF({ ...f, acepta: e.target.checked }); setErrs((p) => { const q = { ...p }; delete q.acepta; return q; }); }} />
-            <span className="text-sm">He leído y acepto el <Link to="/privacidad" target="_blank" className="font-bold text-primary underline">aviso de privacidad y los términos de uso</Link>.</span>
+            <span className="text-sm">He leído y acepto el <button type="button" onClick={() => setVerAviso(true)} className="font-bold text-primary underline">aviso de privacidad y los términos de uso</button>.</span>
           </label>
           {errs.acepta && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.acepta}</p>}
         </div>
@@ -103,6 +105,15 @@ export default function Registro() {
         <button className="btn-primary w-full" disabled={enviando}>{enviando ? 'Creando…' : 'Crear cuenta'}</button>
         <p className="text-center text-sm">¿Ya tienes cuenta? <Link to="/login" className="font-bold text-primary underline">Inicia sesión</Link></p>
       </form>
+      {verAviso && (
+        <Modal titulo="Aviso de privacidad y términos" onCerrar={() => setVerAviso(false)}>
+          <div className="space-y-4 text-sm">
+            <ContenidoPrivacidad />
+            <button type="button" className="btn-primary w-full" onClick={() => { setVerAviso(false); setF((x) => ({ ...x, acepta: true })); setErrs((p) => { const q = { ...p }; delete q.acepta; return q; }); }}>Entendido, acepto</button>
+            <button type="button" className="btn-ghost w-full" onClick={() => setVerAviso(false)}>Cerrar</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
