@@ -93,8 +93,10 @@ export default function NuevaDonacion() {
     // Se revisa en el orden en que aparecen los campos y se lleva a la persona al primero que esté mal
     if (f.titulo.trim().length < 3) return fallar('titulo', 'Escribe el título del alimento (mínimo 3 letras).');
     if (!(Number(f.kilos) > 0)) return fallar('kilos', 'Escribe cuántos kilos aproximados hay (mayor que 0).');
+    if (Number(f.kilos) > 1000) return fallar('kilos', 'El máximo por donación es de 1000 kg. Si tienes más, divídelo en varias donaciones.');
     const cad = new Date(f.fecha_caducidad);
     if (!f.fecha_caducidad || Number.isNaN(cad.getTime()) || cad.getTime() <= Date.now()) return fallar('caducidad', 'La fecha de caducidad debe ser posterior a este momento.');
+    if (cad.getTime() > Date.now() + 30 * 86400000) return fallar('caducidad', 'La fecha de caducidad no puede ser a más de 30 días.');
     if (!hor.dia || !hor.desde || !hor.hasta) return fallar('horario', 'Completa el día y las horas de recolección.');
     if (hor.hasta <= hor.desde) return fallar('horario', 'La hora final de recolección debe ser posterior a la hora inicial.');
     if (new Date(`${hor.dia}T${hor.hasta}`).getTime() > cad.getTime()) return fallar('horario', 'La ventana de recolección debe terminar antes de que caduque el alimento.');
@@ -130,11 +132,11 @@ export default function NuevaDonacion() {
       {!malo && <Alerta>{error}</Alerta>}
 
       <div className="card p-5 space-y-4">
-        <Campo etiqueta="Título del alimento *"><input id="f-titulo" className={`input ${rojo('titulo')}`} required minLength={3} maxLength={120} value={f.titulo} onChange={set('titulo')} placeholder="Ej. Pan dulce y bolillo del día" />{msgCampo('titulo')}</Campo>
+        <Campo etiqueta="Título del alimento *"><input id="f-titulo" className={`input ${rojo('titulo')}`} required minLength={3} maxLength={100} value={f.titulo} onChange={set('titulo')} placeholder="Ej. Pan dulce y bolillo del día" />{msgCampo('titulo')}</Campo>
         <Campo etiqueta="Descripción y estado"><textarea className="input !py-3" rows={3} maxLength={500} value={f.descripcion} onChange={set('descripcion')} placeholder="Elaborado hoy, empacado higiénicamente…" /></Campo>
         <div className="grid sm:grid-cols-2 gap-4">
           <Campo etiqueta="Categoría *"><select className="input" value={f.categoria} onChange={set('categoria')}>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}</select></Campo>
-          <Campo etiqueta="Cantidad aproximada (kg) *"><input id="f-kilos" className={`input ${rojo('kilos')}`} type="number" required min="0.1" max="5000" step="0.1" inputMode="decimal" value={f.kilos} onChange={set('kilos')} />{msgCampo('kilos')}</Campo>
+          <Campo etiqueta="Cantidad aproximada (kg) *"><input id="f-kilos" className={`input ${rojo('kilos')}`} type="number" required min="0.1" max="1000" step="0.1" inputMode="decimal" value={f.kilos} onChange={set('kilos')} />{msgCampo('kilos')}</Campo>
         </div>
       </div>
 

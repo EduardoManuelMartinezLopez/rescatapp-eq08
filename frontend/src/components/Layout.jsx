@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
 import { Icon } from './ui.jsx';
@@ -22,6 +24,46 @@ const MENU = {
   ],
 };
 const ROL = { receptor: 'Receptor comunitario', donante: 'Donante', admin: 'Administrador' };
+
+// Avisos globales: sin conexión y correo sin confirmar
+function Avisos() {
+  const { usuario, setUsuario } = useAuth();
+  const [enLinea, setEnLinea] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [msg, setMsg] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  useEffect(() => {
+    const on = () => setEnLinea(true), off = () => setEnLinea(false);
+    window.addEventListener('online', on); window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+  // Si confirmó el correo en otra pestaña, se actualiza al volver a esta
+  useEffect(() => {
+    if (usuario.correo_verificado !== false) return undefined;
+    const revisar = () => api('/auth/me').then((d) => { if (d.usuario.correo_verificado) setUsuario(d.usuario); }).catch(() => {});
+    window.addEventListener('focus', revisar);
+    return () => window.removeEventListener('focus', revisar);
+  }, [usuario.correo_verificado, setUsuario]);
+  async function reenviar() {
+    setEnviando(true);
+    try { setMsg((await api('/auth/resend-verification', { method: 'POST' })).mensaje); } catch (e) { setMsg(e.message); }
+    finally { setEnviando(false); }
+  }
+  return (
+    <>
+      {!enLinea && (
+        <div role="alert" className="no-print bg-error text-on-error text-sm font-semibold text-center px-4 py-2 flex items-center justify-center gap-2">
+          <Icon name="wifi_off" className="text-[18px]" />Sin conexión a internet. Algunas funciones no estarán disponibles hasta que regrese.
+        </div>
+      )}
+      {usuario.correo_verificado === false && (
+        <div className="no-print bg-secondary-container/40 text-on-surface text-sm px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <span className="flex items-center gap-1"><Icon name="mark_email_unread" className="text-[18px] text-secondary" />{msg || 'Confirma tu correo: te enviamos un enlace a tu bandeja de entrada.'}</span>
+          <button type="button" onClick={reenviar} disabled={enviando} className="font-bold text-primary underline disabled:opacity-50">{enviando ? 'Enviando…' : 'Reenviar enlace'}</button>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function Layout() {
   const { usuario, cerrarSesion } = useAuth();
@@ -63,6 +105,8 @@ export default function Layout() {
           </button>
         </div>
       </header>
+
+      <Avisos />
 
       {/* "key" reinicia la animación de entrada en cada pantalla */}
       <main key={loc.pathname} className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 pb-24 md:pb-8 animate-fade-up"><Outlet /></main>

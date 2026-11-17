@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/reset"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"token":"{{tokenReset}}","password":"123"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 400", function () { pm.response.to.have.status(400); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+    language: text/javascript
+order: 4000

@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { autenticar, requerirRol } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errores');
-const { texto, validarDonacion } = require('../utils/validar');
+const { texto, limpiarTexto, validarDonacion } = require('../utils/validar');
 const { leerFoto } = require('../utils/foto');
 const { expirarVencidas } = require('../services/expiracion');
 
@@ -68,8 +68,8 @@ router.post('/publish', requerirRol('donante'), asyncHandler(async (req, res) =>
     `INSERT INTO donaciones (id_donante, titulo, descripcion, categoria, kilos, direccion, latitud, longitud,
                              horario_recoleccion, acepta_buena_fe, fecha_caducidad, foto, foto_tipo)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE,$10,$11,$12) RETURNING ${RETURNING_COLS}`,
-    [req.usuario.id, texto(b.titulo), texto(b.descripcion) || null, b.categoria, Number(b.kilos), texto(b.direccion),
-     Number(b.latitud), Number(b.longitud), texto(b.horario_recoleccion) || null, new Date(b.fecha_caducidad),
+    [req.usuario.id, limpiarTexto(b.titulo, 100), limpiarTexto(b.descripcion, 500) || null, b.categoria, Number(b.kilos), limpiarTexto(b.direccion, 200),
+     Number(b.latitud), Number(b.longitud), limpiarTexto(b.horario_recoleccion, 120) || null, new Date(b.fecha_caducidad),
      f.foto?.buffer || null, f.foto?.tipo || null]);
   // Avisa a las organizaciones ya validadas que hay alimento nuevo
   await pool.query(
@@ -103,8 +103,8 @@ router.patch('/:id', requerirRol('donante'), asyncHandler(async (req, res) => {
               horario_recoleccion=$8, fecha_caducidad=$9
               ${cambiaFoto ? ', foto=$11, foto_tipo=$12' : ''}
         WHERE id_donacion=$10 RETURNING ${RETURNING_COLS}`,
-      [texto(b.titulo), texto(b.descripcion) || null, b.categoria, Number(b.kilos), texto(b.direccion), Number(b.latitud),
-       Number(b.longitud), texto(b.horario_recoleccion) || null, new Date(b.fecha_caducidad), id,
+      [limpiarTexto(b.titulo, 100), limpiarTexto(b.descripcion, 500) || null, b.categoria, Number(b.kilos), limpiarTexto(b.direccion, 200), Number(b.latitud),
+       Number(b.longitud), limpiarTexto(b.horario_recoleccion, 120) || null, new Date(b.fecha_caducidad), id,
        ...(cambiaFoto ? [f.foto?.buffer || null, f.foto?.tipo || null] : [])]);
     await client.query('COMMIT');
     res.json({ mensaje: 'Donación actualizada.', donacion: rows[0] });

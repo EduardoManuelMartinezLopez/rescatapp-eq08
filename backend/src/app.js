@@ -9,6 +9,21 @@ if (!process.env.JWT_SECRET) {
 }
 
 const app = express();
+app.set('trust proxy', 1); // detrás de nginx: así req.ip es la IP real del visitante
+app.disable('x-powered-by');
+// Cabeceras de seguridad básicas (equivalente a lo esencial de helmet)
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Cross-Origin-Resource-Policy': 'same-site',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)',
+    'Strict-Transport-Security': 'max-age=15552000; includeSubDomains',
+    'Cache-Control': 'no-store',
+  });
+  next();
+});
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 // 700 kb: lo suficiente para una foto pequeña (máx. 400 KB) codificada en base64
 app.use(express.json({ limit: '700kb' }));

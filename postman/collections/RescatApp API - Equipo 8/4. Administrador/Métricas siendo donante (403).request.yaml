@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/metrics"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{tokenDonante}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 403", function () { pm.response.to.have.status(403); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+    language: text/javascript
+order: 1000

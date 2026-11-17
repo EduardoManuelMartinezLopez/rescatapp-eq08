@@ -47,13 +47,13 @@ after(async () => { await new Promise((r) => server.close(r)); await pool.end();
 describe('Autenticación', () => {
   const correo = `auto${sufijo}@rescatapp.test`;
   test('registro válido responde 201 y no expone el hash', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante' } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true } });
     assert.equal(r.status, 201);
     assert.ok(r.datos.token);
     assert.ok(!JSON.stringify(r.datos).includes('password_hash'));
   });
   test('correo duplicado responde 409', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante' } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true } });
     assert.equal(r.status, 409);
   });
   test('datos inválidos responden 400', async () => {
@@ -77,7 +77,7 @@ describe('Recuperar contraseña y perfil', () => {
   const correo = `reset${sufijo}@rescatapp.test`;
   let enlace;
   test('forgot no revela si el correo existe', async () => {
-    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante' } });
+    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante', acepta_terminos: true } });
     assert.equal(a.status, 201);
     const existe = await api('POST', '/api/auth/forgot', { body: { correo } });
     const noExiste = await api('POST', '/api/auth/forgot', { body: { correo: `nadie${sufijo}@rescatapp.test` } });
@@ -149,7 +149,7 @@ describe('Donaciones, fotos y reservas', () => {
   });
   test('un receptor sin validar no puede apartar (403)', async () => {
     const correo = `pend${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor' } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true } });
     assert.equal(reg.datos.usuario.estado_validacion, 'pendiente');
     const d = (await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase() })).datos.donacion;
     assert.equal((await api('POST', '/api/reservations/book', { token: reg.datos.token, body: { id_donacion: d.id_donacion } })).status, 403);
@@ -217,7 +217,7 @@ describe('Administrador', () => {
   });
   test('aprobar una organización le envía notificación', async () => {
     const correo = `aprob${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor' } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true } });
     const id = reg.datos.usuario.id_usuario;
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'quizas' } })).status, 400);
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'aprobada' } })).status, 200);
@@ -234,5 +234,73 @@ describe('Administrador', () => {
     const bytes = Buffer.from(await r.arrayBuffer());
     assert.ok(bytes.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])));
     assert.ok(bytes.toString('utf8').slice(1).startsWith('ID,Alimento'));
+  });
+});
+
+describe('Validaciones de entrada y seguridad', () => {
+  const reg = (extra) => api('POST', '/api/auth/register', { body: { nombre: 'Negocio Valido', correo: `val${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante', acepta_terminos: true, ...extra } });
+  test('rechaza contraseñas comunes o débiles', async () => {
+    for (const password of ['12345678', 'Password1', 'abcdefgh', 'ABCDEFGH1', 'corta1A']) {
+      assert.equal((await reg({ password })).status, 400, password);
+    }
+  });
+  test('rechaza contraseña que contiene el correo o el nombre', async () => {
+    assert.equal((await reg({ nombre: 'Panaderia Espiga', password: 'Espiga2026xyz' })).status, 400);
+  });
+  test('rechaza correos mal escritos o con dominio con error de dedo', async () => {
+    for (const correo of ['sin-arroba', 'a b@correo.com', 'nombre@gmial.com', 'x@y', 'a..b@correo.com']) {
+      assert.equal((await reg({ correo })).status, 400, correo);
+    }
+  });
+  test('exige aceptar el aviso de privacidad y términos', async () => {
+    assert.equal((await reg({ acepta_terminos: false })).status, 400);
+  });
+  test('valida nombre y teléfono', async () => {
+    assert.equal((await reg({ nombre: '<<>>' })).status, 400);
+    assert.equal((await reg({ telefono: 'abc' })).status, 400);
+    assert.equal((await reg({ telefono: '9511234567' })).status, 201);
+  });
+  test('cambiar contraseña exige una contraseña fuerte', async () => {
+    const t = await login('banco@rescatapp.test');
+    const r = await api('PATCH', '/api/auth/password', { token: t, body: { actual: 'Demo1234!', nueva: '12345678' } });
+    assert.equal(r.status, 400);
+  });
+  test('confirmación de correo con enlace', async () => {
+    const r = await reg({});
+    assert.equal(r.datos.usuario.correo_verificado, false);
+    const token = r.datos.enlace_verificacion_dev.split('token=')[1];
+    assert.equal((await api('POST', '/api/auth/verify', { body: { token } })).status, 200);
+    assert.equal((await api('POST', '/api/auth/verify', { body: { token } })).status, 400);
+    const me = await api('GET', '/api/auth/me', { token: r.datos.token });
+    assert.equal(me.datos.usuario.correo_verificado, true);
+  });
+  test('bloquea el login tras 5 intentos fallidos', async () => {
+    const correo = `bloqueo${sufijo}@rescatapp.test`;
+    for (let i = 0; i < 5; i++) assert.equal((await api('POST', '/api/auth/login', { body: { correo, password: 'Mala12345' } })).status, 401);
+    assert.equal((await api('POST', '/api/auth/login', { body: { correo, password: 'Mala12345' } })).status, 429);
+  });
+  test('la API envía cabeceras de seguridad', async () => {
+    const r = await fetch(base + '/api/health');
+    assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(r.headers.get('x-powered-by'), null);
+  });
+  test('donaciones: kilos, caducidad y textos tienen tope', async () => {
+    const t = await login('panaderia@rescatapp.test');
+    const pub = (extra) => api('POST', '/api/donations/publish', { token: t, body: donacionBase(extra) });
+    assert.equal((await pub({ kilos: 1001 })).status, 400);
+    assert.equal((await pub({ fecha_caducidad: futuro(24 * 31) })).status, 400);
+    assert.equal((await pub({ titulo: 'x'.repeat(101) })).status, 400);
+    assert.equal((await pub({ descripcion: 'x'.repeat(501) })).status, 400);
+  });
+  test('la foto debe ser una imagen real (no basta con el encabezado)', async () => {
+    const t = await login('panaderia@rescatapp.test');
+    const falsa = 'data:image/png;base64,' + Buffer.from('esto no es una imagen, es solo texto').toString('base64');
+    assert.equal((await api('POST', '/api/donations/publish', { token: t, body: donacionBase({ foto: falsa }) })).status, 400);
+  });
+  test('los textos se limpian de etiquetas HTML', async () => {
+    const t = await login('panaderia@rescatapp.test');
+    const r = await api('POST', '/api/donations/publish', { token: t, body: donacionBase({ titulo: 'Pan <script>x</script> fresco' }) });
+    assert.equal(r.status, 201);
+    assert.ok(!r.datos.donacion.titulo.includes('<'));
   });
 });

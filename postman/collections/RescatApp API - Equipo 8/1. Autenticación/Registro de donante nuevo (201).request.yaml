@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Tienda de prueba","correo":"{{emailNuevo}}","password":"Prueba1234","rol":"donante","telefono":"9510000001","direccion":"Oaxaca"}'
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 201", function () { pm.response.to.have.status(201); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+      pm.test("No devuelve el hash", function () { pm.expect(JSON.stringify(pm.response.json())).to.not.include("password"); });
+    language: text/javascript
+  - type: beforeRequest
+    code: pm.collectionVariables.set("emailNuevo", "prueba"+Date.now()+"@rescatapp.test");
+    language: text/javascript
+order: 1000

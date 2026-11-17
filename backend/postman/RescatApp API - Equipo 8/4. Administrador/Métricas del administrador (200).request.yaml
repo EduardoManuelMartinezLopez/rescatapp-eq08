@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/metrics"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{tokenAdmin}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 200", function () { pm.response.to.have.status(200); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+      const m = pm.response.json();
+      pm.test("Kilos rescatados es número", function () { pm.expect(m.kilos_rescatados).to.be.a("number"); });
+      pm.test("Hay al menos una entrega completada", function () { pm.expect(m.entregas_completadas).to.be.above(0); });
+    language: text/javascript
+order: 2000

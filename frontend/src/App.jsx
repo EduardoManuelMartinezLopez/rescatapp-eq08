@@ -7,6 +7,9 @@ import Registro from './pages/Registro.jsx';
 import OlvidePassword from './pages/OlvidePassword.jsx';
 import RestablecerPassword from './pages/RestablecerPassword.jsx';
 import Perfil from './pages/Perfil.jsx';
+import Privacidad from './pages/Privacidad.jsx';
+import VerificarCorreo from './pages/VerificarCorreo.jsx';
+import NotFound from './pages/NotFound.jsx';
 import Mapa from './pages/Mapa.jsx';
 import MisReservas from './pages/MisReservas.jsx';
 import MisDonaciones from './pages/MisDonaciones.jsx';
@@ -39,6 +42,8 @@ export default function App() {
       <Route path="/registro" element={publica(<Registro />)} />
       <Route path="/olvide" element={<OlvidePassword />} />
       <Route path="/restablecer" element={<RestablecerPassword />} />
+      <Route path="/privacidad" element={<Privacidad />} />
+      <Route path="/verificar" element={<VerificarCorreo />} />
       <Route element={usuario ? <Layout /> : <Navigate to="/login" replace />}>
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/mapa" element={<Protegida roles={['receptor']}><Mapa /></Protegida>} />
@@ -49,7 +54,8 @@ export default function App() {
         <Route path="/admin" element={<Protegida roles={['admin']}><AdminPanel /></Protegida>} />
         <Route path="/admin/organizaciones" element={<Protegida roles={['admin']}><AdminOrganizaciones /></Protegida>} />
       </Route>
-      <Route path="*" element={<Inicio />} />
+      <Route path="/" element={<Inicio />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

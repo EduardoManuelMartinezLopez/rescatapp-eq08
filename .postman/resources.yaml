@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 92f42b51-8943-456d-8143-de1dde441124
+
+localResources:
+  collections:
+    - ../backend/postman/RescatApp API - Equipo 8
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/RescatApp API - Equipo 8: d2494835-5d1a-4649-80d9-614ad1ec1fac

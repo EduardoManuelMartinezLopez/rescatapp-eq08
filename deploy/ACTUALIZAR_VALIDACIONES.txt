@@ -1,0 +1,12 @@
+ACTUALIZACIÓN v3 (validaciones y seguridad) - pasos en el servidor, uno por uno
+
+1) Respaldo:
+   cd ~/rescatapp-eq08 && bash deploy/respaldo_bd.sh
+
+2) Subir los archivos nuevos (git pull o copiar el zip) y aplicar la migración de la base:
+   cd ~/rescatapp-eq08 && export $(grep -E '^DB_(USER|PASSWORD|NAME)=' backend/.env | xargs); export PGPASSWORD="$DB_PASSWORD"; psql -U "$DB_USER" -h localhost "$DB_NAME" -f database/migracion_verificacion.sql
+
+3) Desplegar:
+   cd ~/rescatapp-eq08 && git checkout -- backend/package-lock.json && bash deploy/actualizar.sh
+
+(Para dejar la demo limpia se puede en vez del paso 2 reiniciar la base completa con database/rescatapp_database.sql.)

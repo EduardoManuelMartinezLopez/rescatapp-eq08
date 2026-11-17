@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/password"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "actual": "NuevaClave123",
+      "nueva": "ClaveFinal123"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{tokenNuevo}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 200", function () { pm.response.to.have.status(200); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+    language: text/javascript
+order: 12000

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { validarPassword } from '../reglas.js';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
 import { usePwa } from '../components/usePwa.js';
-import { Alerta, Campo, CampoPassword, CampoTelefono, Estrellas, Icon } from '../components/ui.jsx';
+import { Alerta, Campo, CampoPassword, CampoTelefono, Estrellas, Icon, IndicadorPassword } from '../components/ui.jsx';
 import SelectorUbicacion from '../components/SelectorUbicacion.jsx';
 import Impacto from '../components/Impacto.jsx';
 import { fechaCorta } from '../utils.js';
@@ -37,6 +38,8 @@ export default function Perfil() {
 
   async function cambiarPassword(e) {
     e.preventDefault(); setMsgP(null);
+    const malas = validarPassword(p.nueva, usuario);
+    if (malas.length) return setMsgP({ tipo: 'error', texto: malas[0] });
     if (p.nueva !== p.repetir) return setMsgP({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' });
     try {
       const d = await api('/auth/password', { method: 'PATCH', body: { actual: p.actual, nueva: p.nueva } });
@@ -71,7 +74,7 @@ export default function Perfil() {
         <button className="btn-primary w-full">Guardar cambios</button>
       </form>
 
-      <form onSubmit={cambiarPassword} className="card p-5 space-y-4">
+      <form onSubmit={cambiarPassword} noValidate className="card p-5 space-y-4">
         <h2 className="font-bold text-lg">{usuario.password_definida === false ? 'Crear una contraseña' : 'Cambiar contraseña'}</h2>
         {usuario.password_definida === false && <p className="text-sm text-on-surface-variant">Entraste con Google. Si quieres, crea una contraseña para también iniciar sesión con tu correo.</p>}
         <Alerta tipo={msgP?.tipo}>{msgP?.texto}</Alerta>
@@ -79,9 +82,10 @@ export default function Perfil() {
           <Campo etiqueta="Contraseña actual"><CampoPassword value={p.actual} onChange={(e) => setP({ ...p, actual: e.target.value })} /></Campo>
         )}
         <div className="grid sm:grid-cols-2 gap-4">
-          <Campo etiqueta="Nueva contraseña"><CampoPassword minLength={8} autoComplete="new-password" value={p.nueva} onChange={(e) => setP({ ...p, nueva: e.target.value })} /></Campo>
-          <Campo etiqueta="Repite la nueva"><CampoPassword minLength={8} autoComplete="new-password" value={p.repetir} onChange={(e) => setP({ ...p, repetir: e.target.value })} /></Campo>
+          <Campo etiqueta="Nueva contraseña"><CampoPassword autoComplete="new-password" value={p.nueva} onChange={(e) => setP({ ...p, nueva: e.target.value })} /></Campo>
+          <Campo etiqueta="Repite la nueva"><CampoPassword autoComplete="new-password" value={p.repetir} onChange={(e) => setP({ ...p, repetir: e.target.value })} /></Campo>
         </div>
+        <IndicadorPassword password={p.nueva} ctx={usuario} />
         <button className="btn-ghost w-full">Actualizar contraseña</button>
       </form>
 

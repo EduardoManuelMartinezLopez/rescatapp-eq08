@@ -1,0 +1,21 @@
+$kind: http-request
+name: Google con credencial falsa (401 si está configurado, 503 si no)
+url: "{{baseUrl}}/api/auth/google"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "credential": "credencial-falsa"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado esperado (401 o 503)", function () { pm.expect([401, 503]).to.include(pm.response.code); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+    language: text/javascript
+order: 13000

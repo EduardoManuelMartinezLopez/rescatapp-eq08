@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/api/impact/mine"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{tokenDonante}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Código de estado 200", function () { pm.response.to.have.status(200); });
+      pm.test("Responde en menos de 1000 ms", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });
+      const j = pm.response.json();
+      pm.test("Incluye comidas y CO2e", function () { pm.expect(j.comidas_equivalentes).to.be.a("number"); pm.expect(j.co2e_evitado_kg).to.be.a("number"); });
+    language: text/javascript
+order: 9000

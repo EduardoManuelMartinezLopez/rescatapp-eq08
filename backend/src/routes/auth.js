@@ -5,16 +5,26 @@ const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { autenticar } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errores');
-const { texto, validarRegistro } = require('../utils/validar');
+const { texto, limpiarTexto, validarRegistro, validarCorreo, validarNombre, validarTelefono, validarPassword } = require('../utils/validar');
+const { crearLimitador, limitarPeticiones, minutos } = require('../utils/limitador');
 const { enviarCorreo, plantillaHtml } = require('../services/correo');
 const { notificar } = require('../services/notificaciones');
 
 const router = express.Router();
 
+// Intentos de inicio de sesión: solo cuentan los FALLOS, por IP + correo (5 fallos = 15 min de espera)
+const fallosLogin = crearLimitador({ max: 5, ventanaMs: 15 * 60 * 1000 });
+// Solicitudes de recuperación y reenvíos de verificación: máximo 5 por IP cada 15 minutos
+const limitarForgot = limitarPeticiones({ max: 5, ventanaMs: 15 * 60 * 1000, mensaje: 'Hiciste demasiadas solicitudes.' });
+const limitarReenvio = limitarPeticiones({ max: 5, ventanaMs: 15 * 60 * 1000, mensaje: 'Hiciste demasiadas solicitudes.' });
+// Registros: máximo 40 por IP cada hora (evita crear cuentas en masa)
+const limitarRegistro = limitarPeticiones({ max: 40, ventanaMs: 60 * 60 * 1000, mensaje: 'Se crearon demasiadas cuentas desde esta red.' });
+router.limpiarLimites = () => { fallosLogin.limpiarTodo(); limitarForgot.limpiar(); limitarReenvio.limpiar(); limitarRegistro.limpiar(); };
+
 const publico = (u, extra = {}) => ({
   id_usuario: u.id_usuario, nombre: u.nombre, correo: u.correo, rol: u.rol,
   telefono: u.telefono, direccion: u.direccion, estado_validacion: u.estado_validacion,
-  con_google: !!u.google_id, password_definida: u.password_definida, ...extra,
+  con_google: !!u.google_id, password_definida: u.password_definida, correo_verificado: !!u.correo_verificado, ...extra,
 });
 
 const firmar = (u) =>
@@ -32,8 +42,31 @@ async function avisarAdmins(db, nombre) {
     [`Nueva organización por validar: ${nombre}.`]);
 }
 
+// Crea un enlace de verificación (vence en 24 h) y lo envía por correo. Nunca lanza error.
+async function enviarVerificacion(u) {
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    await pool.query('UPDATE verificaciones_correo SET usado = TRUE WHERE id_usuario = $1 AND usado = FALSE', [u.id_usuario]);
+    await pool.query(
+      "INSERT INTO verificaciones_correo (id_usuario, token_hash, expira) VALUES ($1,$2, NOW() + INTERVAL '24 hours')",
+      [u.id_usuario, sha256(token)]);
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verificar?token=${token}`;
+    await enviarCorreo({
+      para: u.correo, asunto: 'Confirma tu correo en RescatApp',
+      texto: `Hola ${u.nombre}:\n\nConfirma tu correo abriendo este enlace (vence en 24 horas):\n${enlace}\n\nSi no creaste la cuenta, ignora este mensaje.`,
+      html: plantillaHtml({
+        titulo: 'Confirma tu correo',
+        parrafos: [`Hola ${u.nombre}:`, 'Gracias por registrarte. Confirma que este correo es tuyo para proteger tu cuenta. El enlace vence en 24 horas.'],
+        boton: { texto: 'Confirmar mi correo', url: enlace },
+        pie: 'Si no creaste una cuenta en RescatApp, ignora este mensaje.',
+      }),
+    });
+    return process.env.DEV_SHOW_RESET_LINK === 'true' ? enlace : null;
+  } catch (e) { console.error('[CORREO] No se pudo enviar la verificación:', e.message); return null; }
+}
+
 // POST /api/auth/register
-router.post('/register', asyncHandler(async (req, res) => {
+router.post('/register', limitarRegistro, asyncHandler(async (req, res) => {
   const errores = validarRegistro(req.body);
   if (errores.length) return res.status(400).json({ error: 'Datos inválidos.', detalles: errores });
 
@@ -45,10 +78,12 @@ router.post('/register', asyncHandler(async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO usuarios (nombre, correo, password_hash, rol, telefono, direccion, estado_validacion)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [texto(nombre), texto(correo).toLowerCase(), hash, rol, texto(telefono) || null, texto(direccion) || null, estado]
+      [limpiarTexto(nombre, 100).replace(/\s+/g, ' '), texto(correo).toLowerCase(), hash, rol, texto(telefono) || null, limpiarTexto(direccion, 200) || null, estado]
     );
     if (rol === 'receptor') await avisarAdmins(pool, rows[0].nombre);
-    res.status(201).json({ mensaje: 'Cuenta creada correctamente.', usuario: publico(rows[0]), token: firmar(rows[0]) });
+    const enlaceDev = await enviarVerificacion(rows[0]);
+    const extra = enlaceDev ? { enlace_verificacion_dev: enlaceDev } : {};
+    res.status(201).json({ mensaje: 'Cuenta creada correctamente. Te enviamos un correo para confirmar tu dirección.', usuario: publico(rows[0]), token: firmar(rows[0]), ...extra });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ya existe una cuenta con ese correo.' });
     throw err;
@@ -62,12 +97,20 @@ router.post('/login', asyncHandler(async (req, res) => {
   if (!correo || typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'Correo y contraseña son obligatorios.' });
   }
+  const clave = `${req.ip}|${correo}`;
+  const espera = fallosLogin.bloqueado(clave);
+  if (espera) {
+    res.set('Retry-After', String(espera));
+    return res.status(429).json({ error: `Demasiados intentos fallidos. Por seguridad, espera ${minutos(espera)} minuto(s) e inténtalo de nuevo, o usa «¿Olvidaste tu contraseña?».` });
+  }
   const { rows } = await pool.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
   const u = rows[0];
   // Mismo mensaje si el correo no existe o la contraseña falla (no revelamos cuál)
   if (!u || !(await bcrypt.compare(password, u.password_hash))) {
+    fallosLogin.registrar(clave);
     return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
   }
+  fallosLogin.reiniciar(clave);
   res.json({ token: firmar(u), usuario: publico(u) });
 }));
 
@@ -97,7 +140,7 @@ router.post('/google', asyncHandler(async (req, res) => {
   let u = existente.rows[0];
   if (u) {
     if (!u.google_id) { // cuenta creada con contraseña: se vincula con Google (el correo ya está verificado por Google)
-      u = (await pool.query('UPDATE usuarios SET google_id = $1 WHERE id_usuario = $2 RETURNING *', [perfil.sub, u.id_usuario])).rows[0];
+      u = (await pool.query('UPDATE usuarios SET google_id = $1, correo_verificado = TRUE WHERE id_usuario = $2 RETURNING *', [perfil.sub, u.id_usuario])).rows[0];
     }
     return res.json({ token: firmar(u), usuario: publico(u) });
   }
@@ -107,18 +150,19 @@ router.post('/google', asyncHandler(async (req, res) => {
 
   const hashAleatorio = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
   const nuevo = (await pool.query(
-    `INSERT INTO usuarios (nombre, correo, password_hash, rol, estado_validacion, google_id, password_definida)
-     VALUES ($1,$2,$3,$4,$5,$6,FALSE) RETURNING *`,
+    `INSERT INTO usuarios (nombre, correo, password_hash, rol, estado_validacion, google_id, password_definida, correo_verificado)
+     VALUES ($1,$2,$3,$4,$5,$6,FALSE,TRUE) RETURNING *`,
     [texto(perfil.name || correo).slice(0, 120), correo, hashAleatorio, rol, rol === 'receptor' ? 'pendiente' : 'aprobada', perfil.sub])).rows[0];
   if (rol === 'receptor') await avisarAdmins(pool, nuevo.nombre);
   res.status(201).json({ token: firmar(nuevo), usuario: publico(nuevo) });
 }));
 
 // POST /api/auth/forgot  { correo }  -> siempre responde igual (no revela si el correo existe)
-router.post('/forgot', asyncHandler(async (req, res) => {
+router.post('/forgot', limitarForgot, asyncHandler(async (req, res) => {
   const correo = texto(req.body?.correo).toLowerCase();
   const respuesta = { mensaje: 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Vence en 30 minutos.' };
-  if (!correo) return res.status(400).json({ error: 'Escribe tu correo.' });
+  const errCorreo = validarCorreo(correo);
+  if (errCorreo) return res.status(400).json({ error: errCorreo });
 
   const { rows } = await pool.query('SELECT id_usuario, nombre FROM usuarios WHERE correo = $1', [correo]);
   if (rows[0]) {
@@ -149,7 +193,6 @@ router.post('/forgot', asyncHandler(async (req, res) => {
 router.post('/reset', asyncHandler(async (req, res) => {
   const { token, password } = req.body || {};
   if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return res.status(400).json({ error: 'El enlace no es válido o ya venció.' });
-  if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
 
   const client = await pool.connect();
   try {
@@ -157,9 +200,15 @@ router.post('/reset', asyncHandler(async (req, res) => {
     const { rows } = await client.query(
       'SELECT * FROM password_resets WHERE token_hash = $1 AND usado = FALSE AND expira > NOW() FOR UPDATE', [sha256(token)]);
     if (!rows[0]) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'El enlace no es válido o ya venció.' }); }
+    const dueno = (await client.query('SELECT nombre, correo FROM usuarios WHERE id_usuario = $1', [rows[0].id_usuario])).rows[0];
+    const errPw = validarPassword(password, dueno);
+    if (errPw.length) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Contraseña no válida.', detalles: errPw }); }
     await client.query('UPDATE usuarios SET password_hash = $1, password_definida = TRUE WHERE id_usuario = $2',
       [await bcrypt.hash(password, 10), rows[0].id_usuario]);
     await client.query('UPDATE password_resets SET usado = TRUE WHERE id_usuario = $1', [rows[0].id_usuario]);
+    // Si abrió el enlace desde su correo, también queda comprobado que el correo es suyo
+    await client.query('UPDATE usuarios SET correo_verificado = TRUE WHERE id_usuario = $1', [rows[0].id_usuario]);
+    fallosLogin.limpiarTodo();
     await client.query('COMMIT');
     res.json({ mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
   } catch (err) {
@@ -179,11 +228,12 @@ router.get('/me', autenticar, asyncHandler(async (req, res) => {
 
 // PATCH /api/auth/me  { nombre, telefono, direccion }
 router.patch('/me', autenticar, asyncHandler(async (req, res) => {
-  const nombre = texto(req.body?.nombre);
+  const nombre = limpiarTexto(req.body?.nombre, 100).replace(/\s+/g, ' ');
   const telefono = texto(req.body?.telefono);
-  const direccion = texto(req.body?.direccion);
-  if (nombre.length < 3) return res.status(400).json({ error: 'El nombre debe tener al menos 3 caracteres.' });
-  if (telefono && !/^[0-9+()\-\s]{7,20}$/.test(telefono)) return res.status(400).json({ error: 'El teléfono no es válido.' });
+  const direccion = limpiarTexto(req.body?.direccion, 300);
+  const errores = [validarNombre(nombre), validarTelefono(telefono),
+    direccion.length > 200 ? 'La dirección es demasiado larga (máximo 200 caracteres).' : null].filter(Boolean);
+  if (errores.length) return res.status(400).json({ error: errores[0], detalles: errores });
   const { rows } = await pool.query(
     'UPDATE usuarios SET nombre = $1, telefono = $2, direccion = $3 WHERE id_usuario = $4 RETURNING *',
     [nombre, telefono || null, direccion || null, req.usuario.id]);
@@ -193,15 +243,38 @@ router.patch('/me', autenticar, asyncHandler(async (req, res) => {
 // PATCH /api/auth/password  { actual?, nueva }
 router.patch('/password', autenticar, asyncHandler(async (req, res) => {
   const { actual, nueva } = req.body || {};
-  if (typeof nueva !== 'string' || nueva.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
   const { rows } = await pool.query('SELECT * FROM usuarios WHERE id_usuario = $1', [req.usuario.id]);
   const u = rows[0];
+  const errPw = validarPassword(nueva, u);
+  if (errPw.length) return res.status(400).json({ error: 'Contraseña no válida.', detalles: errPw });
   if (u.password_definida && !(await bcrypt.compare(String(actual || ''), u.password_hash))) {
     return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
   }
+  if (u.password_definida && actual === nueva) return res.status(400).json({ error: 'La nueva contraseña debe ser distinta de la actual.' });
   await pool.query('UPDATE usuarios SET password_hash = $1, password_definida = TRUE WHERE id_usuario = $2',
     [await bcrypt.hash(nueva, 10), req.usuario.id]);
   res.json({ mensaje: 'Contraseña actualizada.' });
+}));
+
+// POST /api/auth/verify  { token }  -> confirma el correo con el enlace recibido
+router.post('/verify', asyncHandler(async (req, res) => {
+  const { token } = req.body || {};
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return res.status(400).json({ error: 'El enlace no es válido o ya venció.' });
+  const { rows } = await pool.query(
+    'UPDATE verificaciones_correo SET usado = TRUE WHERE token_hash = $1 AND usado = FALSE AND expira > NOW() RETURNING id_usuario', [sha256(token)]);
+  if (!rows[0]) return res.status(400).json({ error: 'El enlace no es válido o ya venció. Pide uno nuevo desde tu cuenta.' });
+  await pool.query('UPDATE usuarios SET correo_verificado = TRUE WHERE id_usuario = $1', [rows[0].id_usuario]);
+  res.json({ mensaje: 'Correo confirmado. ¡Gracias!' });
+}));
+
+// POST /api/auth/resend-verification  (con sesión iniciada)
+router.post('/resend-verification', autenticar, limitarReenvio, asyncHandler(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM usuarios WHERE id_usuario = $1', [req.usuario.id]);
+  const u = rows[0];
+  if (!u) return res.status(401).json({ error: 'El usuario ya no existe.' });
+  if (u.correo_verificado) return res.json({ mensaje: 'Tu correo ya está confirmado.' });
+  const enlaceDev = await enviarVerificacion(u);
+  res.json({ mensaje: 'Te enviamos un nuevo enlace. Revisa tu bandeja de entrada y la carpeta de spam.', ...(enlaceDev ? { enlace_dev: enlaceDev } : {}) });
 }));
 
 module.exports = router;

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, tomarAviso } from '../api.js';
 import { useAuth, rutaInicial } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
 import { Alerta, BotonTema, CampoPassword, Icon } from '../components/ui.jsx';
@@ -17,6 +17,7 @@ export default function Login() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [aviso] = useState(() => tomarAviso());
   const [estado, setEstado] = useState('reposo'); // estado del globo: reposo | cargando | listo
   const [googlePendiente, setGooglePendiente] = useState(null);
 
@@ -77,6 +78,7 @@ export default function Login() {
               <h2 className="text-2xl font-extrabold">Iniciar sesión</h2>
               <p className="text-on-surface-variant text-sm">Accede para compartir o apartar alimentos.</p>
             </div>
+            <Alerta tipo="aviso">{aviso}</Alerta>
             <Alerta>{error}</Alerta>
             <label className="block">
               <span className="block text-sm font-semibold mb-1">Correo electrónico</span>

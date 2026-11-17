@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { fuerzaPassword, reglasPassword } from '../reglas.js';
 
 export const Icon = ({ name, className = '' }) => (
   <span className={`material-symbols-outlined ${className}`} aria-hidden="true">{name}</span>
@@ -49,11 +50,12 @@ export const Vacio = ({ icono = 'inbox', titulo, texto }) => (
   </div>
 );
 
-export const Campo = ({ etiqueta, children, ayuda }) => (
+export const Campo = ({ etiqueta, children, ayuda, error }) => (
   <label className="block">
     <span className="block text-sm font-semibold mb-1">{etiqueta}</span>
     {children}
-    {ayuda && <span className="block text-xs text-on-surface-variant mt-1">{ayuda}</span>}
+    {error ? <span role="alert" className="block text-xs font-semibold text-error mt-1">{error}</span>
+      : ayuda && <span className="block text-xs text-on-surface-variant mt-1">{ayuda}</span>}
   </label>
 );
 
@@ -108,15 +110,39 @@ export function Modal({ titulo, onCerrar, children }) {
 }
 
 // ---- Campo de contraseña con botón para ver lo escrito ----
-export function CampoPassword({ value, onChange, placeholder, autoComplete = 'current-password', required = true, minLength, className = '' }) {
+export function CampoPassword({ value, onChange, placeholder, autoComplete = 'current-password', required = true, minLength, className = '', maxLength = 72, onBlur }) {
   const [ver, setVer] = useState(false);
   return (
     <div className="relative">
-      <input className={`input pr-12 ${className}`} type={ver ? 'text' : 'password'} required={required} minLength={minLength} autoComplete={autoComplete}
-        placeholder={placeholder} value={value} onChange={onChange} />
+      <input className={`input pr-12 ${className}`} type={ver ? 'text' : 'password'} required={required} minLength={minLength} maxLength={maxLength} autoComplete={autoComplete}
+        placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} />
       <button type="button" onClick={() => setVer(!ver)} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 text-outline hover:text-on-surface" aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
         <Icon name={ver ? 'visibility_off' : 'visibility'} />
       </button>
+    </div>
+  );
+}
+
+// ---- Indicador de fuerza + lista de requisitos de la contraseña (se actualiza al escribir) ----
+export function IndicadorPassword({ password, ctx }) {
+  if (!password) return null;
+  const f = fuerzaPassword(password, ctx);
+  const colores = ['bg-error', 'bg-secondary', 'bg-primary'];
+  return (
+    <div className="mt-2 space-y-2" aria-live="polite">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex gap-1">
+          {[0, 1, 2].map((i) => <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= f.nivel ? colores[f.nivel] : 'bg-surface-variant'}`} />)}
+        </div>
+        <span className={`text-xs font-bold w-12 text-right ${f.nivel === 0 ? 'text-error' : f.nivel === 1 ? 'text-secondary' : 'text-primary'}`}>{f.etiqueta}</span>
+      </div>
+      <ul className="grid sm:grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+        {reglasPassword(password, ctx).map((r) => (
+          <li key={r.id} className={`flex items-center gap-1 ${r.ok ? 'text-primary' : 'text-on-surface-variant'}`}>
+            <Icon name={r.ok ? 'check_circle' : 'radio_button_unchecked'} className="text-[16px]" />{r.texto}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

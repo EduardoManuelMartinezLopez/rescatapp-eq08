@@ -12,6 +12,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DROP TABLE IF EXISTS calificaciones   CASCADE;
 DROP TABLE IF EXISTS notificaciones   CASCADE;
+DROP TABLE IF EXISTS verificaciones_correo CASCADE;
 DROP TABLE IF EXISTS password_resets  CASCADE;
 DROP TABLE IF EXISTS reservas   CASCADE;
 DROP TABLE IF EXISTS donaciones CASCADE;
@@ -35,7 +36,9 @@ CREATE TABLE usuarios (
     fecha_registro    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     -- v2: inicio de sesión con Google y recuperación de contraseña
     google_id         VARCHAR(64)  UNIQUE,
-    password_definida BOOLEAN      NOT NULL DEFAULT TRUE   -- FALSE si la cuenta se creó con Google
+    password_definida BOOLEAN      NOT NULL DEFAULT TRUE,  -- FALSE si la cuenta se creó con Google
+    -- v3: confirmación del correo con enlace (las cuentas de Google ya vienen verificadas)
+    correo_verificado BOOLEAN      NOT NULL DEFAULT FALSE
 );
 
 -- ---------------------------------------------------------------------
@@ -101,6 +104,16 @@ CREATE TABLE password_resets (
     creado      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- v3: confirmación de correo (solo se guarda el hash del token)
+CREATE TABLE verificaciones_correo (
+    id_verificacion SERIAL PRIMARY KEY,
+    id_usuario      INTEGER  NOT NULL REFERENCES usuarios (id_usuario) ON DELETE CASCADE,
+    token_hash      CHAR(64) NOT NULL UNIQUE,
+    expira          TIMESTAMPTZ NOT NULL,
+    usado           BOOLEAN  NOT NULL DEFAULT FALSE,
+    creado          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ---------------------------------------------------------------------
 -- 5) v2: NOTIFICACIONES DENTRO DE LA APP
 -- ---------------------------------------------------------------------
@@ -156,6 +169,9 @@ INSERT INTO usuarios (nombre, correo, password_hash, rol, telefono, direccion, e
     crypt('Demo1234!', gen_salt('bf', 10)), 'receptor', '9514444444', 'Centro, Oaxaca de Juárez, Oax.',        'aprobada'),
  ('Albergue Casa Nueva (demo)',     'albergue@rescatapp.test',
     crypt('Demo1234!', gen_salt('bf', 10)), 'receptor', '9515555555', 'Col. Volcanes, Oaxaca de Juárez, Oax.', 'pendiente');
+
+-- Las cuentas demo ya cuentan con el correo confirmado
+UPDATE usuarios SET correo_verificado = TRUE;
 
 -- Coordenadas aproximadas dentro de Oaxaca de Juárez (solo para la demostración)
 INSERT INTO donaciones (id_donante, titulo, descripcion, categoria, kilos, direccion, latitud, longitud,

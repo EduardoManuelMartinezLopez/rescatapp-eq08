@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { autenticar } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errores');
-const { texto } = require('../utils/validar');
+const { texto, limpiarTexto } = require('../utils/validar');
 const { notificar } = require('../services/notificaciones');
 
 const router = express.Router();
@@ -13,7 +13,7 @@ router.use(autenticar);
 router.post('/', asyncHandler(async (req, res) => {
   const idReserva = parseInt(req.body?.id_reserva, 10);
   const estrellas = Number(req.body?.estrellas);
-  const comentario = texto(req.body?.comentario).slice(0, 300);
+  const comentario = limpiarTexto(req.body?.comentario, 300);
   if (!Number.isInteger(idReserva)) return res.status(400).json({ error: 'id_reserva es obligatorio.' });
   if (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5) return res.status(400).json({ error: 'Las estrellas deben ser un número del 1 al 5.' });
 

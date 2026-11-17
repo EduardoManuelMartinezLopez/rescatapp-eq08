@@ -4,6 +4,9 @@ const TOKEN_KEY = 'rescatapp_token';
 export const guardarToken = (t) => {
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch { /* ignorar */ }
 };
+export const AVISO_KEY = 'rescatapp_aviso';
+export const dejarAviso = (t) => { try { sessionStorage.setItem(AVISO_KEY, t); } catch { /* ignorar */ } };
+export const tomarAviso = () => { try { const t = sessionStorage.getItem(AVISO_KEY); sessionStorage.removeItem(AVISO_KEY); return t || ''; } catch { return ''; } };
 export const leerToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
 
 export async function api(ruta, { method = 'GET', body } = {}) {
@@ -17,6 +20,10 @@ export async function api(ruta, { method = 'GET', body } = {}) {
     throw new Error('No se pudo conectar con el servidor. ¿Está encendido el backend?');
   }
   const datos = await res.json().catch(() => ({}));
+  // Token vencido o inválido (no aplica al login): se avisa para cerrar la sesión con un mensaje claro
+  if (res.status === 401 && token && !ruta.startsWith('/auth/login') && !ruta.startsWith('/auth/google')) {
+    window.dispatchEvent(new CustomEvent('rescatapp:sesion-vencida'));
+  }
   if (!res.ok) {
     const err = new Error(datos.detalles?.join(' ') || datos.error || 'Ocurrió un error.');
     err.status = res.status;
