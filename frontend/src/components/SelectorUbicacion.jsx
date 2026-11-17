@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Icon } from './ui.jsx';
@@ -16,11 +16,54 @@ function formatear(x) {
   const txt = [calle, colonia, ciudad].filter(Boolean).join(', ');
   return (txt.length >= 5 ? txt : String(x.display_name || '').split(',').slice(0, 3).join(',').trim()).slice(0, 250);
 }
-async function buscar(q) {
-  const p = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', 'accept-language': 'es', countrycodes: 'mx', limit: '5', viewbox: '-97.4,17.4,-96.2,16.7', q });
+// Búsqueda en OpenStreetMap (Nominatim) con preferencia por la zona de Oaxaca
+async function nominatim(q, acotar = false) {
+  const p = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', 'accept-language': 'es', countrycodes: 'mx', limit: '6', viewbox: '-97.4,17.4,-96.2,16.7', q });
+  if (acotar) p.set('bounded', '1');
   const r = await fetch(`${NOM}/search?${p}`);
   if (!r.ok) throw new Error('El buscador de direcciones no respondió.');
   return (await r.json()).map((x) => ({ texto: formatear(x), lat: Number(x.lat), lng: Number(x.lon) }));
+}
+
+// Photon (OpenStreetMap): tolera errores de dedo y direcciones incompletas
+async function photon(q) {
+  const p = new URLSearchParams({ q, lat: '17.06', lon: '-96.72', limit: '8' });
+  const r = await fetch(`https://photon.komoot.io/api/?${p}`);
+  if (!r.ok) throw new Error('El buscador de direcciones no respondió.');
+  const j = await r.json();
+  return (j.features || [])
+    .filter((f) => f.properties?.countrycode === 'MX' && f.geometry?.coordinates)
+    .map((f) => {
+      const a = f.properties; const [lng, lat] = f.geometry.coordinates;
+      const calle = a.street ? [a.street, a.housenumber].filter(Boolean).join(' ') : '';
+      const texto = [a.name && a.name !== a.street ? a.name : '', calle, a.district || a.locality, a.city || a.county || a.state].filter(Boolean).join(', ');
+      return { texto: texto.slice(0, 250), lat, lng };
+    })
+    .filter((r) => r.texto.length >= 3 && r.lat > 15.5 && r.lat < 18.7 && r.lng > -98.6 && r.lng < -94.6);
+}
+
+// Quita palabras que estorban ("calle", "col.", "número"…) y números para intentar con algo más simple
+const simplificar = (t) => t.replace(/\b(calle|col(onia)?\.?|av(enida)?\.?|num(ero)?\.?|no\.?|esquina|entre|y|c\.p\.?)\b/gi, ' ').replace(/#?\d+[a-z]?\b/gi, ' ').replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
+const sinDuplicados = (lista) => { const v = new Set(); return lista.filter((r) => { const k = `${r.lat.toFixed(4)},${r.lng.toFixed(4)}`; if (v.has(k)) return false; v.add(k); return true; }); };
+
+// Prueba varias formas hasta encontrar sugerencias: exacta → solo en Oaxaca → simplificada → Photon (tolerante)
+async function buscar(texto) {
+  const base = texto.trim();
+  const conCiudad = /oaxaca/i.test(base) ? base : `${base}, Oaxaca`;
+  const simple = simplificar(base);
+  const intentos = [
+    () => nominatim(conCiudad),
+    () => nominatim(base, true),
+    () => (simple.length >= 3 && simple !== base ? nominatim(`${simple}, Oaxaca`, true) : []),
+    () => photon(conCiudad),
+    () => (simple.length >= 3 ? photon(`${simple} Oaxaca`) : []),
+  ];
+  let ultimoError = null;
+  for (const intento of intentos) {
+    try { const r = sinDuplicados(await intento()); if (r.length) return r; } catch (e) { ultimoError = e; }
+  }
+  if (ultimoError) throw ultimoError;
+  return [];
 }
 async function inversa(lat, lng) {
   const p = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', 'accept-language': 'es', zoom: '18', lat, lon: lng });
@@ -48,20 +91,32 @@ export default function SelectorUbicacion({ direccion, onDireccion, punto, onPun
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState('');
   const [verMapa, setVerMapa] = useState(!plegable);
+  const tecleando = useRef(false); // solo se sugiere mientras la persona escribe (no al rellenar desde el mapa)
+
+  // Sugerencias mientras escribe (con pausa para no saturar el buscador)
+  useEffect(() => {
+    const q = (direccion || '').trim();
+    if (!tecleando.current || q.length < 4) return undefined;
+    const t = setTimeout(async () => {
+      try { const r = await photon(/oaxaca/i.test(q) ? q : `${q} Oaxaca`); if (tecleando.current) setResultados(r.slice(0, 5)); } catch { /* sin sugerencias */ }
+    }, 700);
+    return () => clearTimeout(t);
+  }, [direccion]);
 
   async function ir() {
     if ((direccion || '').trim().length < 3) return setMsg('Escribe al menos 3 letras de la dirección para buscarla.');
+    tecleando.current = false;
     setOcupado(true); setMsg(''); setResultados([]);
     try {
-      const q = /oaxaca/i.test(direccion) ? direccion : `${direccion}, Oaxaca`;
-      const r = await buscar(q);
-      if (r.length === 0) setMsg('No encontré esa dirección. Prueba con otra o márcala en el mapa.');
+      const r = await buscar(direccion);
+      if (r.length === 0) setMsg('No encontré esa dirección. Prueba solo con el nombre de la calle o colonia (ej. «Reforma, Oaxaca»), o tócala directamente en el mapa.');
       setResultados(r);
     } catch (e) { setMsg(e.message); }
     finally { setOcupado(false); }
   }
-  const elegir = (r) => { onDireccion(r.texto); onPunto([r.lat, r.lng]); setResultados([]); setVerMapa(true); setMsg(''); };
+  const elegir = (r) => { tecleando.current = false; onDireccion(r.texto); onPunto([r.lat, r.lng]); setResultados([]); setVerMapa(true); setMsg(''); };
   async function alMapa(p) {
+    tecleando.current = false;
     onPunto(p); setOcupado(true); setMsg(''); setResultados([]);
     try { onDireccion(await inversa(p[0], p[1])); }
     catch (e) { setMsg(`${e.message} Puedes escribirla tú.`); }
@@ -80,7 +135,7 @@ export default function SelectorUbicacion({ direccion, onDireccion, punto, onPun
     <div className="space-y-2">
       <div className="flex gap-2">
         <input className="input" value={direccion} required={requerida} minLength={requerida ? 5 : undefined} placeholder="Escribe la dirección y pulsa Buscar"
-          onChange={(e) => onDireccion(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ir(); } }} />
+          onChange={(e) => { tecleando.current = true; onDireccion(e.target.value); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ir(); } }} />
         <button type="button" className="btn-ghost shrink-0 !px-4" onClick={ir} disabled={ocupado} aria-label="Buscar dirección"><Icon name={ocupado ? 'progress_activity' : 'search'} className={ocupado ? 'animate-spin' : ''} /><span className="hidden sm:inline">Buscar</span></button>
         <button type="button" className="btn-ghost shrink-0 !px-3" onClick={miUbicacion} disabled={ocupado} title="Usar mi ubicación" aria-label="Usar mi ubicación"><Icon name="my_location" /></button>
       </div>
