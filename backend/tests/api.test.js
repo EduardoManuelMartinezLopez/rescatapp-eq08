@@ -101,7 +101,7 @@ describe('Recuperar contraseña y perfil', () => {
   });
   test('perfil: actualizar datos y cambiar contraseña', async () => {
     const t = await login(correo, 'Nueva12345');
-    const p = await api('PATCH', '/api/auth/me', { token: t, body: { nombre: 'Persona Actualizada', telefono: '951 123 4567', direccion: 'Calle 1' } });
+    const p = await api('PATCH', '/api/auth/me', { token: t, body: { nombre: 'Persona Actualizada', telefono: '951 123 4567', direccion: 'Calle Hidalgo 1, Centro', latitud: 17.06, longitud: -96.72 } });
     assert.equal(p.status, 200);
     assert.equal(p.datos.usuario.nombre, 'Persona Actualizada');
     assert.equal((await api('PATCH', '/api/auth/me', { token: t, body: { nombre: 'X' } })).status, 400);
