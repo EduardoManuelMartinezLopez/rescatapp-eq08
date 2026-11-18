@@ -13,7 +13,7 @@ Archivos de esta carpeta:
 4. Crear `backend/.env` a partir de `backend/.env.example` con valores de producción (ver abajo).
 5. `cd frontend && npm install && npm run build` y copiar `dist/` a `/var/www/rescatapp`.
 6. `cd backend && npm install --omit=dev && pm2 start ../deploy/ecosystem.config.js && pm2 save && pm2 startup`.
-7. Copiar `nginx.conf` (cambiando `TU_DOMINIO`), activar el sitio y ejecutar `sudo certbot --nginx -d TU_DOMINIO`.
+7. Copiar `nginx.conf` (cambiando `TU_DOMINIO`), activar el sitio y ejecutar `sudo certbot --nginx -d TU_DOMINIO`. Si también usas «www», agrega `-d www.TU_DOMINIO` y deja la línea de redirección permanente a `https://TU_DOMINIO` que trae `nginx.conf`.
 
 ## Valores de producción en `backend/.env`
 ```

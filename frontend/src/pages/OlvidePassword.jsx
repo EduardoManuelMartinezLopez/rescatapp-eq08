@@ -39,7 +39,10 @@ export default function OlvidePassword() {
         ) : (
           <form onSubmit={enviar} className="space-y-4">
             <Alerta>{error}</Alerta>
-            <input className="input" type="email" required autoComplete="email" placeholder="tu@correo.com" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+            <label className="block">
+              <span className="block text-sm font-semibold mb-1">Correo electrónico</span>
+              <input className="input" type="email" required autoComplete="email" maxLength={254} placeholder="tu@correo.com" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+            </label>
             <button className="btn-primary w-full" disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar enlace'}</button>
           </form>
         )}
