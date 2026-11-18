@@ -43,7 +43,17 @@ export default function Registro() {
     e.preventDefault();
     setError('');
     const malos = revisar(); setErrs(malos);
-    if (Object.keys(malos).length) { setError('Revisa los campos marcados en rojo.'); return; }
+    const primero = ['nombre', 'correo', 'telefono', 'password', 'password2', 'acepta'].find((k) => malos[k]);
+    if (primero) {
+      setError('Revisa los campos marcados en rojo.');
+      // Lleva a la persona al primer campo con error y lo selecciona
+      setTimeout(() => {
+        const el = document.getElementById(`r-${primero}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.querySelector('input,select')?.focus({ preventScroll: true });
+      }, 50);
+      return;
+    }
     setEnviando(true);
     try {
       const { password2, acepta, ...resto } = f;
@@ -82,19 +92,19 @@ export default function Registro() {
           ))}
         </fieldset>
         <BotonGoogle onCredencial={conGoogle} onError={setError} />
-        <Campo etiqueta="Nombre del negocio u organización" error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={set('nombre')} onBlur={alSalir('nombre')} placeholder="Ej. Panadería San Martín" autoComplete="organization" /></Campo>
-        <Campo etiqueta="Correo electrónico" error={errs.correo}><input className="input" type="email" inputMode="email" maxLength={254} autoComplete="email" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo>
+        <div id="r-nombre"><Campo etiqueta="Nombre del negocio u organización" error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={set('nombre')} onBlur={alSalir('nombre')} placeholder="Ej. Panadería San Martín" autoComplete="organization" /></Campo></div>
+        <div id="r-correo"><Campo etiqueta="Correo electrónico" error={errs.correo}><input className="input" type="email" inputMode="email" maxLength={254} autoComplete="email" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo></div>
         <div className="grid gap-4">
-          <Campo etiqueta="Teléfono de contacto" ayuda="Solo se comparte con quien reserve o reciba tu donación." error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo>
+          <div id="r-telefono"><Campo etiqueta="Teléfono de contacto" ayuda="Solo se comparte con quien reserve o reciba tu donación." error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo></div>
           <div><span className="block text-sm font-semibold mb-1">Dirección</span>
           <SelectorUbicacion requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => setF((x) => ({ ...x, direccion: v }))} punto={punto} onPunto={setPunto} /></div>
         </div>
-        <div>
+        <div id="r-password">
           <Campo etiqueta="Contraseña" error={errs.password}><CampoPassword autoComplete="new-password" required={false} value={f.password} onChange={set('password')} onBlur={alSalir('password')} /></Campo>
           <IndicadorPassword password={f.password} ctx={{ correo: f.correo, nombre: f.nombre }} />
         </div>
-        <Campo etiqueta="Repite la contraseña" error={errs.password2}><CampoPassword autoComplete="new-password" required={false} value={f.password2} onChange={set('password2')} onBlur={alSalir('password2')} /></Campo>
-        <div>
+        <div id="r-password2"><Campo etiqueta="Repite la contraseña" error={errs.password2}><CampoPassword autoComplete="new-password" required={false} value={f.password2} onChange={set('password2')} onBlur={alSalir('password2')} /></Campo></div>
+        <div id="r-acepta">
           <label className="flex gap-3 items-start cursor-pointer">
             <input type="checkbox" className="mt-1 w-6 h-6 accent-primary shrink-0" checked={f.acepta} onChange={(e) => { setF({ ...f, acepta: e.target.checked }); setErrs((p) => { const q = { ...p }; delete q.acepta; return q; }); }} />
             <span className="text-sm">He leído y acepto el <button type="button" onClick={() => setVerAviso(true)} className="font-bold text-primary underline">aviso de privacidad y los términos de uso</button>.</span>
