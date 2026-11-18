@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { validarCorreo, validarNombre, validarPassword, validarTelefono } from '../reglas.js';
+import { validarCorreo, validarDireccion, validarNombre, validarPassword, validarTelefono, validarUbicacion } from '../reglas.js';
 import { api } from '../api.js';
 import { useAuth, rutaInicial } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
@@ -31,7 +31,8 @@ export default function Registro() {
     const e = {};
     const n = validarNombre(x.nombre); if (n) e.nombre = n;
     const c = validarCorreo(x.correo); if (c) e.correo = c;
-    const t = validarTelefono(x.telefono); if (t) e.telefono = t;
+    const t = validarTelefono(x.telefono, true); if (t) e.telefono = t;
+    const d = validarDireccion(x.direccion) || validarUbicacion(punto?.[0], punto?.[1]); if (d) e.direccion = d;
     const p = validarPassword(x.password, { correo: x.correo, nombre: x.nombre }); if (p.length) e.password = p[0];
     if (!x.password2) e.password2 = 'Repite la contraseña.'; else if (x.password2 !== x.password) e.password2 = 'Las contraseñas no coinciden.';
     if (!x.acepta) e.acepta = 'Debes aceptar el aviso de privacidad y los términos para crear tu cuenta.';
@@ -43,7 +44,7 @@ export default function Registro() {
     e.preventDefault();
     setError('');
     const malos = revisar(); setErrs(malos);
-    const primero = ['nombre', 'correo', 'telefono', 'password', 'password2', 'acepta'].find((k) => malos[k]);
+    const primero = ['nombre', 'correo', 'telefono', 'direccion', 'password', 'password2', 'acepta'].find((k) => malos[k]);
     if (primero) {
       setError('Revisa los campos marcados en rojo.');
       // Lleva a la persona al primer campo con error y lo selecciona
@@ -57,7 +58,7 @@ export default function Registro() {
     setEnviando(true);
     try {
       const { password2, acepta, ...resto } = f;
-      const u = await registrar({ ...resto, acepta_terminos: acepta });
+      const u = await registrar({ ...resto, acepta_terminos: acepta, latitud: punto[0], longitud: punto[1] });
       nav(rutaInicial(u.rol), { replace: true });
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
@@ -96,8 +97,10 @@ export default function Registro() {
         <div id="r-correo"><Campo etiqueta="Correo electrónico" error={errs.correo}><input className="input" type="email" inputMode="email" maxLength={254} autoComplete="email" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo></div>
         <div className="grid gap-4">
           <div id="r-telefono"><Campo etiqueta="Teléfono de contacto" ayuda="Solo se comparte con quien reserve o reciba tu donación." error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo></div>
-          <div><span className="block text-sm font-semibold mb-1">Dirección</span>
-          <SelectorUbicacion requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => setF((x) => ({ ...x, direccion: v }))} punto={punto} onPunto={setPunto} /></div>
+          <div id="r-direccion"><span className="block text-sm font-semibold mb-1">Dirección</span>
+          <SelectorUbicacion requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => { setF((x) => ({ ...x, direccion: v })); setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} punto={punto} onPunto={(v) => { setPunto(v); if (v) setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} />
+          {errs.direccion && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.direccion}</p>}
+          <p className="text-xs text-on-surface-variant mt-1">Obligatoria: elige una sugerencia de la lista o toca el mapa para confirmar que el lugar existe.</p></div>
         </div>
         <div id="r-password">
           <Campo etiqueta="Contraseña" error={errs.password}><CampoPassword autoComplete="new-password" required={false} value={f.password} onChange={set('password')} onBlur={alSalir('password')} /></Campo>

@@ -135,7 +135,7 @@ export default function SelectorUbicacion({ direccion, onDireccion, punto, onPun
     <div className="space-y-2">
       <div className="flex gap-2">
         <input className="input" value={direccion} required={requerida} minLength={requerida ? 5 : undefined} placeholder="Escribe la dirección y pulsa Buscar"
-          onChange={(e) => { tecleando.current = true; onDireccion(e.target.value); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ir(); } }} />
+          onChange={(e) => { tecleando.current = true; onDireccion(e.target.value); if (punto) onPunto(null); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ir(); } }} />
         <button type="button" className="btn-ghost shrink-0 !px-4" onClick={ir} disabled={ocupado} aria-label="Buscar dirección"><Icon name={ocupado ? 'progress_activity' : 'search'} className={ocupado ? 'animate-spin' : ''} /><span className="hidden sm:inline">Buscar</span></button>
         <button type="button" className="btn-ghost shrink-0 !px-3" onClick={miUbicacion} disabled={ocupado} title="Usar mi ubicación" aria-label="Usar mi ubicación"><Icon name="my_location" /></button>
       </div>

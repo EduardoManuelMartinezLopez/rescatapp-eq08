@@ -13,8 +13,9 @@ function validarRegistro(b = {}) {
   const n = R.validarNombre(b.nombre); if (n) e.push(n);
   const c = R.validarCorreo(b.correo); if (c) e.push(c);
   e.push(...R.validarPassword(b.password, { correo: texto(b.correo), nombre: texto(b.nombre) }));
-  const t = R.validarTelefono(b.telefono); if (t) e.push(t);
-  if (b.direccion && R.limpiarTexto(b.direccion, 400).length > 200) e.push('La dirección es demasiado larga (máximo 200 caracteres).');
+  const t = R.validarTelefono(b.telefono, true); if (t) e.push(t);
+  const d = R.validarDireccion(b.direccion); if (d) e.push(d);
+  const u = R.validarUbicacion(b.latitud, b.longitud); if (u) e.push(u);
   if (!['donante', 'receptor'].includes(b.rol)) e.push('El rol debe ser "donante" o "receptor".');
   if (b.acepta_terminos !== true) e.push('Debes aceptar el aviso de privacidad y los términos de uso.');
   return e;

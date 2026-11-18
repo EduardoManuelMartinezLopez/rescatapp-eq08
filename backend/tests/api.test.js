@@ -47,13 +47,13 @@ after(async () => { await new Promise((r) => server.close(r)); await pool.end();
 describe('Autenticación', () => {
   const correo = `auto${sufijo}@rescatapp.test`;
   test('registro válido responde 201 y no expone el hash', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(r.status, 201);
     assert.ok(r.datos.token);
     assert.ok(!JSON.stringify(r.datos).includes('password_hash'));
   });
   test('correo duplicado responde 409', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(r.status, 409);
   });
   test('datos inválidos responden 400', async () => {
@@ -77,7 +77,7 @@ describe('Recuperar contraseña y perfil', () => {
   const correo = `reset${sufijo}@rescatapp.test`;
   let enlace;
   test('forgot no revela si el correo existe', async () => {
-    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante', acepta_terminos: true } });
+    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(a.status, 201);
     const existe = await api('POST', '/api/auth/forgot', { body: { correo } });
     const noExiste = await api('POST', '/api/auth/forgot', { body: { correo: `nadie${sufijo}@rescatapp.test` } });
@@ -149,7 +149,7 @@ describe('Donaciones, fotos y reservas', () => {
   });
   test('un receptor sin validar no puede apartar (403)', async () => {
     const correo = `pend${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(reg.datos.usuario.estado_validacion, 'pendiente');
     const d = (await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase() })).datos.donacion;
     assert.equal((await api('POST', '/api/reservations/book', { token: reg.datos.token, body: { id_donacion: d.id_donacion } })).status, 403);
@@ -217,7 +217,7 @@ describe('Administrador', () => {
   });
   test('aprobar una organización le envía notificación', async () => {
     const correo = `aprob${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     const id = reg.datos.usuario.id_usuario;
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'quizas' } })).status, 400);
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'aprobada' } })).status, 200);
@@ -238,7 +238,7 @@ describe('Administrador', () => {
 });
 
 describe('Validaciones de entrada y seguridad', () => {
-  const reg = (extra) => api('POST', '/api/auth/register', { body: { nombre: 'Negocio Valido', correo: `val${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante', acepta_terminos: true, ...extra } });
+  const reg = (extra) => api('POST', '/api/auth/register', { body: { nombre: 'Negocio Valido', correo: `val${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72, ...extra } });
   test('rechaza contraseñas comunes o débiles', async () => {
     for (const password of ['12345678', 'Password1', 'abcdefgh', 'ABCDEFGH1', 'corta1A']) {
       assert.equal((await reg({ password })).status, 400, password);
@@ -258,7 +258,18 @@ describe('Validaciones de entrada y seguridad', () => {
   test('valida nombre y teléfono', async () => {
     assert.equal((await reg({ nombre: '<<>>' })).status, 400);
     assert.equal((await reg({ telefono: 'abc' })).status, 400);
+    assert.equal((await reg({ telefono: '' })).status, 400);
+    assert.equal((await reg({ telefono: '+52 951123' })).status, 400);
     assert.equal((await reg({ telefono: '9511234567' })).status, 201);
+  });
+  test('rechaza nombres sin sentido', async () => {
+    for (const nombre of ['jkljkjkljkl', 'asdfgh', 'aaaaaa']) assert.equal((await reg({ nombre })).status, 400, nombre);
+  });
+  test('la dirección debe ser real y tener ubicación en el mapa dentro de Oaxaca', async () => {
+    assert.equal((await reg({ direccion: 'panaderia@rescatapp.test' })).status, 400);
+    assert.equal((await reg({ direccion: '12345' })).status, 400);
+    assert.equal((await reg({ latitud: undefined, longitud: undefined })).status, 400);
+    assert.equal((await reg({ latitud: 19.43, longitud: -99.13 })).status, 400);
   });
   test('cambiar contraseña exige una contraseña fuerte', async () => {
     const t = await login('banco@rescatapp.test');

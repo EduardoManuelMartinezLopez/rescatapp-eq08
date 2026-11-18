@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { validarPassword } from '../reglas.js';
+import { validarDireccion, validarNombre, validarPassword, validarTelefono, validarUbicacion } from '../reglas.js';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTema } from '../context/TemaContext.jsx';
@@ -30,8 +30,15 @@ export default function Perfil() {
 
   async function guardar(e) {
     e.preventDefault(); setMsg(null);
+    // Mismas reglas que el servidor
+    const esAdmin = usuario.rol === 'admin';
+    const malos = [validarNombre(f.nombre), validarTelefono(f.telefono, !esAdmin)];
+    if (!esAdmin || f.direccion) malos.push(validarDireccion(f.direccion));
+    if (f.direccion && f.direccion !== (usuario.direccion || '')) malos.push(validarUbicacion(punto?.[0], punto?.[1]));
+    const primero = malos.find(Boolean);
+    if (primero) return setMsg({ tipo: 'error', texto: primero });
     try {
-      const d = await api('/auth/me', { method: 'PATCH', body: f });
+      const d = await api('/auth/me', { method: 'PATCH', body: { ...f, ...(punto ? { latitud: punto[0], longitud: punto[1] } : {}) } });
       setUsuario({ ...usuario, ...d.usuario }); setMsg({ tipo: 'ok', texto: d.mensaje });
     } catch (err) { setMsg({ tipo: 'error', texto: err.message }); }
   }
@@ -64,10 +71,10 @@ export default function Perfil() {
       )}
       {usuario.rol !== 'admin' && <Impacto />}
 
-      <form onSubmit={guardar} className="card p-5 space-y-4">
+      <form onSubmit={guardar} noValidate className="card p-5 space-y-4">
         <h2 className="font-bold text-lg">Mis datos</h2>
         <Alerta tipo={msg?.tipo}>{msg?.texto}</Alerta>
-        <Campo etiqueta="Nombre"><input className="input" required minLength={3} value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></Campo>
+        <Campo etiqueta="Nombre"><input className="input" maxLength={100} value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></Campo>
         <Campo etiqueta="Teléfono" ayuda="Se comparte solo tras apartar o recibir una donación."><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo>
         <div><span className="block text-sm font-semibold mb-1">Dirección</span>
           <SelectorUbicacion plegable requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => setF((x) => ({ ...x, direccion: v }))} punto={punto} onPunto={setPunto} /></div>

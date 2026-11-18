@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { autenticar } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errores');
-const { texto, limpiarTexto, validarRegistro, validarCorreo, validarNombre, validarTelefono, validarPassword } = require('../utils/validar');
+const { texto, limpiarTexto, validarRegistro, validarCorreo, validarNombre, validarTelefono, validarDireccion, validarUbicacion, validarPassword } = require('../utils/validar');
 const { crearLimitador, limitarPeticiones, minutos } = require('../utils/limitador');
 const { enviarCorreo, plantillaHtml } = require('../services/correo');
 const { notificar } = require('../services/notificaciones');
@@ -78,7 +78,7 @@ router.post('/register', limitarRegistro, asyncHandler(async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO usuarios (nombre, correo, password_hash, rol, telefono, direccion, estado_validacion)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [limpiarTexto(nombre, 100).replace(/\s+/g, ' '), texto(correo).toLowerCase(), hash, rol, texto(telefono) || null, limpiarTexto(direccion, 200) || null, estado]
+      [limpiarTexto(nombre, 100).replace(/\s+/g, ' '), texto(correo).toLowerCase(), hash, rol, texto(telefono), limpiarTexto(direccion, 200).replace(/\s+/g, ' '), estado]
     );
     if (rol === 'receptor') await avisarAdmins(pool, rows[0].nombre);
     const enlaceDev = await enviarVerificacion(rows[0]);
@@ -231,9 +231,15 @@ router.patch('/me', autenticar, asyncHandler(async (req, res) => {
   const nombre = limpiarTexto(req.body?.nombre, 100).replace(/\s+/g, ' ');
   const telefono = texto(req.body?.telefono);
   const direccion = limpiarTexto(req.body?.direccion, 300);
-  const errores = [validarNombre(nombre), validarTelefono(telefono),
-    direccion.length > 200 ? 'La dirección es demasiado larga (máximo 200 caracteres).' : null].filter(Boolean);
-  if (errores.length) return res.status(400).json({ error: errores[0], detalles: errores });
+  const actual = (await pool.query('SELECT rol, direccion FROM usuarios WHERE id_usuario = $1', [req.usuario.id])).rows[0];
+  if (!actual) return res.status(401).json({ error: 'El usuario ya no existe.' });
+  const esAdmin = actual.rol === 'admin';
+  const errores = [validarNombre(nombre), validarTelefono(telefono, !esAdmin)];
+  if (!esAdmin || direccion) errores.push(validarDireccion(direccion));
+  // Si cambió la dirección, debe venir de un punto real del mapa
+  if (direccion && direccion !== (actual.direccion || '')) errores.push(validarUbicacion(req.body?.latitud, req.body?.longitud));
+  const malos = errores.filter(Boolean);
+  if (malos.length) return res.status(400).json({ error: malos[0], detalles: malos });
   const { rows } = await pool.query(
     'UPDATE usuarios SET nombre = $1, telefono = $2, direccion = $3 WHERE id_usuario = $4 RETURNING *',
     [nombre, telefono || null, direccion || null, req.usuario.id]);

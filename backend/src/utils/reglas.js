@@ -33,18 +33,49 @@ function validarNombre(valor) {
   if (n.length > 100) return 'El nombre es demasiado largo (máximo 100 caracteres).';
   if (!NOMBRE_RE.test(n)) return 'El nombre solo puede tener letras, números y signos comunes (. , \' & ( ) -).';
   if ((n.match(/\p{L}/gu) || []).length < 2) return 'El nombre debe incluir letras.';
+  // Detecta texto sin sentido (golpes al teclado como "jkljkjkljkl" o "asdfgh")
+  const bajo = sinAcentos(n).toLowerCase();
+  const palabras = bajo.split(/[^a-z]+/).filter(Boolean);
+  const sinSentido = /(.)\1{3,}/.test(bajo) || /asdf|qwer|zxcv|sdfg|hjkl|jkl[jk]|wasd|xcvb/.test(bajo) || /[bcdfghjklmnpqrstvwxyz]{6,}/.test(bajo)
+    || palabras.some((w) => w.length >= 5 && !/[aeiouy]/.test(w));
+  if (sinSentido) return 'Escribe el nombre real de tu negocio u organización.';
   return null;
 }
 
 // ---------- Teléfono ----------
-// Acepta "+52 9511234567", "9511234567" o formatos con espacios y guiones. Devuelve error o null (vacío es válido).
-function validarTelefono(valor) {
+// Acepta "+52 9511234567", "9511234567" o formatos con espacios y guiones. Devuelve error o null.
+// Con obligatorio = true, el teléfono no puede ir vacío.
+function validarTelefono(valor, obligatorio = false) {
   const t = typeof valor === 'string' ? valor.trim() : '';
-  if (!t) return null;
+  if (!t) return obligatorio ? 'Escribe un teléfono de contacto.' : null;
   if (!/^[0-9+()\-\s]{7,25}$/.test(t)) return 'El teléfono solo puede tener números, espacios, guiones y el signo +.';
   const digitos = t.replace(/\D/g, '');
   if (digitos.length < 7 || digitos.length > 15) return 'El teléfono debe tener entre 7 y 15 dígitos.';
-  if (/^(\d)\1+$/.test(digitos)) return 'El teléfono no es válido.';
+  if (/^(\d)\1+$/.test(digitos) || /^(0123456789|1234567890|9876543210)$/.test(digitos.slice(-10))) return 'El teléfono no es válido.';
+  // México (+52 o sin lada): 10 dígitos
+  const nacional = t.startsWith('+52') ? digitos.slice(2) : (t.startsWith('+') ? null : digitos);
+  if (nacional !== null && nacional.length !== 10) return 'El teléfono debe tener 10 dígitos (ej. 9511234567).';
+  return null;
+}
+
+// ---------- Dirección y ubicación ----------
+// Zona permitida: estado de Oaxaca (aprox.)
+const ZONA = { latMin: 15.5, latMax: 18.8, lngMin: -98.6, lngMax: -93.7 };
+function validarDireccion(valor) {
+  const d = typeof valor === 'string' ? limpiarTexto(valor, 500).replace(/\s+/g, ' ') : '';
+  if (d.length < 5) return 'Escribe la dirección (mínimo 5 caracteres).';
+  if (d.length > 200) return 'La dirección es demasiado larga (máximo 200 caracteres).';
+  if (/@|https?:|www\./i.test(d)) return 'Escribe una dirección real (calle, colonia…), no un correo ni un enlace.';
+  if ((d.match(/\p{L}/gu) || []).length < 3) return 'La dirección debe incluir el nombre de la calle o colonia.';
+  return null;
+}
+// La ubicación debe ser un punto real marcado en el mapa dentro de Oaxaca
+function validarUbicacion(lat, lng) {
+  const a = Number(lat), b = Number(lng);
+  if (lat === undefined || lat === null || lat === '' || lng === undefined || lng === null || lng === '' || !Number.isFinite(a) || !Number.isFinite(b)) {
+    return 'Elige la ubicación en el mapa: busca la dirección y selecciónala de la lista, o toca el mapa.';
+  }
+  if (a < ZONA.latMin || a > ZONA.latMax || b < ZONA.lngMin || b > ZONA.lngMax) return 'La ubicación debe estar en el estado de Oaxaca.';
   return null;
 }
 
@@ -143,6 +174,6 @@ function limpiarTexto(valor, max = 500) {
 }
 
 module.exports = {
-  EMAIL_RE, validarCorreo, validarNombre, validarTelefono,
+  EMAIL_RE, validarCorreo, validarNombre, validarTelefono, validarDireccion, validarUbicacion,
   reglasPassword, validarPassword, fuerzaPassword, esComun, contieneDatosPersonales, limpiarTexto,
 };
