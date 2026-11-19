@@ -65,6 +65,8 @@ export default function NuevaDonacion() {
       setTimeout(() => (el.matches('input,select,textarea') ? el : el.querySelector('input'))?.focus({ preventScroll: true }), 350);
     }
   }
+  // Al corregir un campo marcado en rojo, se quita el aviso sin esperar a volver a publicar
+  const limpiar = (c) => { if (malo === c) { setMalo(''); setError(''); } };
   const rojo = (c) => (malo === c ? '!border-error ring-2 ring-error/30' : '');
   const msgCampo = (c) => (malo === c && error ? <p className="text-sm text-error font-semibold mt-1 flex gap-1"><Icon name="error" className="!text-[18px]" />{error}</p> : null);
 
@@ -183,7 +185,7 @@ export default function NuevaDonacion() {
 
       <div id="f-direccion" className={`card p-5 space-y-2 ${malo === 'direccion' ? '!border-error ring-2 ring-error/30' : ''}`}>
         <p className="text-sm font-semibold">Dirección de recolección *</p>
-        <SelectorUbicacion direccion={dir} onDireccion={setDir} punto={punto} onPunto={setPunto} />
+        <SelectorUbicacion direccion={dir} onDireccion={(v) => { setDir(v); limpiar('direccion'); }} punto={punto} onPunto={(v) => { setPunto(v); limpiar('direccion'); }} />
         {msgCampo('direccion')}
       </div>
 

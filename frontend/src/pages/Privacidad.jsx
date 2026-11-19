@@ -4,7 +4,7 @@ import { BotonTema, Icon } from '../components/ui.jsx';
 
 export const SECCIONES = [
   ['Quiénes somos', 'RescatApp es una plataforma académica (proyecto escolar del Instituto Tecnológico de Oaxaca) que conecta negocios con excedentes de alimentos con comedores, albergues y organizaciones de Oaxaca de Juárez. No maneja pagos ni vende alimentos.'],
-  ['Qué datos recopilamos', 'Nombre del negocio u organización, correo electrónico, contraseña (se guarda cifrada, nunca en texto claro), teléfono y dirección de contacto (opcionales), así como las donaciones, reservas y calificaciones que registras en la plataforma.'],
+  ['Qué datos recopilamos', 'Nombre del negocio u organización, correo electrónico, contraseña (se guarda cifrada, nunca en texto claro), teléfono y dirección de contacto (necesarios para coordinar la entrega), así como las donaciones, reservas y calificaciones que registras en la plataforma.'],
   ['Para qué los usamos', 'Para crear tu cuenta, mostrar tus donaciones a quien puede recogerlas, coordinar la recolección, enviarte avisos (por ejemplo, confirmar tu correo o recuperar tu contraseña) y calcular estadísticas de impacto sin datos personales.'],
   ['Con quién se comparten', 'Tu teléfono y dirección solo los ve la persona u organización con la que coordinas una donación. No vendemos ni cedemos tus datos a terceros.'],
   ['Tus derechos', 'Puedes consultar y corregir tus datos desde tu perfil, y pedir que tu cuenta sea eliminada escribiendo al responsable del proyecto. Puedes cambiar tu contraseña en cualquier momento.'],
