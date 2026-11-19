@@ -6,6 +6,7 @@ import { useTema } from '../context/TemaContext.jsx';
 import { Alerta, BotonTema, CampoPassword, Icon } from '../components/ui.jsx';
 import Globo from '../components/Globo.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
+import { guardarCredencial } from '../lib/credenciales.js';
 
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 const LEYENDA = { reposo: 'Oaxaca de Juárez', cargando: 'Conectando…', listo: '¡Bienvenido!' };
@@ -33,7 +34,7 @@ export default function Login() {
     } catch (err) { setEstado('reposo'); setError(err.message); }
   }
 
-  const enviar = (e) => { e.preventDefault(); entrar(() => iniciarSesion(correo, password)); };
+  const enviar = (e) => { e.preventDefault(); entrar(async () => { const d = await iniciarSesion(correo, password); guardarCredencial(correo, password); return d; }); };
   const conGoogle = useCallback((credential) => {
     entrar(async () => {
       const d = await api('/auth/google', { method: 'POST', body: { credential } });

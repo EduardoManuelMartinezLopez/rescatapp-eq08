@@ -8,6 +8,7 @@ import { Alerta, BotonTema, Campo, CampoPassword, CampoTelefono, Icon, Indicador
 import { ContenidoPrivacidad } from './Privacidad.jsx';
 import SelectorUbicacion from '../components/SelectorUbicacion.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
+import { guardarCredencial } from '../lib/credenciales.js';
 
 const ROLES = [
   { v: 'donante', t: 'Soy negocio donante', d: 'Panadería, restaurante, mercado… Publicas tus excedentes.', i: 'storefront' },
@@ -59,6 +60,7 @@ export default function Registro() {
     try {
       const { password2, acepta, ...resto } = f;
       const u = await registrar({ ...resto, acepta_terminos: acepta, latitud: punto[0], longitud: punto[1] });
+      guardarCredencial(f.correo, f.password, f.nombre);
       nav(rutaInicial(u.rol), { replace: true });
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
