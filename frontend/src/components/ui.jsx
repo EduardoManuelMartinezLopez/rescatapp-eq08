@@ -110,11 +110,11 @@ export function Modal({ titulo, onCerrar, children }) {
 }
 
 // ---- Campo de contraseña con botón para ver lo escrito ----
-export function CampoPassword({ value, onChange, placeholder, autoComplete = 'current-password', required = true, minLength, className = '', maxLength = 72, onBlur }) {
+export function CampoPassword({ value, onChange, placeholder, autoComplete = 'current-password', required = true, minLength, className = '', maxLength = 72, onBlur, name = 'password', id }) {
   const [ver, setVer] = useState(false);
   return (
     <div className="relative">
-      <input className={`input pr-12 ${className}`} type={ver ? 'text' : 'password'} required={required} minLength={minLength} maxLength={maxLength} autoComplete={autoComplete}
+      <input className={`input pr-12 ${className}`} type={ver ? 'text' : 'password'} required={required} minLength={minLength} maxLength={maxLength} autoComplete={autoComplete} name={name} id={id}
         placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} />
       <button type="button" onClick={() => setVer(!ver)} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 text-outline hover:text-on-surface" aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
         <Icon name={ver ? 'visibility_off' : 'visibility'} />

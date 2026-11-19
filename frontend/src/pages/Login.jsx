@@ -82,11 +82,11 @@ export default function Login() {
             <Alerta>{error}</Alerta>
             <label className="block">
               <span className="block text-sm font-semibold mb-1">Correo electrónico</span>
-              <input className="input" type="email" required autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" />
+              <input className="input" type="email" name="email" id="login-email" required autoComplete="username" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" />
             </label>
             <div>
               <span className="flex justify-between text-sm font-semibold mb-1">Contraseña <Link to="/olvide" className="text-primary">¿La olvidaste?</Link></span>
-              <CampoPassword value={password} onChange={(e) => setPassword(e.target.value)} />
+              <CampoPassword name="password" id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <button className="btn-primary w-full" disabled={ocupado}>
               {estado === 'listo' ? <><Icon name="check_circle" /> ¡Bienvenido!</> : estado === 'cargando' ? 'Conectando…' : 'Iniciar sesión'}
