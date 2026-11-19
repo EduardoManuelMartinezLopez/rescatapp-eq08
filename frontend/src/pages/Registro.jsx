@@ -9,6 +9,8 @@ import { ContenidoPrivacidad } from './Privacidad.jsx';
 import SelectorUbicacion from '../components/SelectorUbicacion.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
 import { guardarCredencial } from '../lib/credenciales.js';
+import { TEXTO_ROL } from '../lib/roles.js';
+import DatosGoogle from '../components/DatosGoogle.jsx';
 
 const ROLES = [
   { v: 'donante', t: 'Soy negocio donante', d: 'Panadería, restaurante, mercado… Publicas tus excedentes.', i: 'storefront' },
@@ -25,7 +27,9 @@ export default function Registro() {
   const [error, setError] = useState('');
   const [punto, setPunto] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [googlePendiente, setGooglePendiente] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const T = TEXTO_ROL[f.rol];
 
   // Revisa todos los campos con las MISMAS reglas que el servidor y muestra el mensaje junto a cada uno
   function revisar(x = f) {
@@ -70,14 +74,30 @@ export default function Registro() {
   const conGoogle = useCallback(async (credential) => {
     setError('');
     try {
-      const d = await api('/auth/google', { method: 'POST', body: { credential, rol: f.rol } });
+      const d = await api('/auth/google', { method: 'POST', body: { credential } });
+      // Cuenta nueva: se piden los datos del negocio u organización según el rol elegido arriba
+      if (d.necesita_rol) { setGooglePendiente({ credential, perfil: d.perfil }); return; }
       nav(rutaInicial(aceptarSesion(d).rol), { replace: true });
     } catch (err) { setError(err.message); }
-  }, [f.rol, aceptarSesion, nav]);
+  }, [aceptarSesion, nav]);
+
+  async function enviarDatosGoogle(datos) {
+    setError(''); setEnviando(true);
+    try {
+      const d = await api('/auth/google', { method: 'POST', body: { credential: googlePendiente.credential, rol: f.rol, ...datos } });
+      nav(rutaInicial(aceptarSesion(d).rol), { replace: true });
+    } catch (err) { setError(err.message); }
+    finally { setEnviando(false); }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <BotonTema tema={tema} alternar={alternar} />
+      {googlePendiente ? (
+        <div className="card w-full max-w-xl p-8 flex justify-center">
+          <DatosGoogle rol={f.rol} perfil={googlePendiente.perfil} onEnviar={enviarDatosGoogle} onVolver={() => { setGooglePendiente(null); setError(''); }} error={error} ocupado={enviando} />
+        </div>
+      ) : (
       <form onSubmit={enviar} noValidate className="card w-full max-w-xl p-8 space-y-5 animate-fade-up">
         <div>
           <h1 className="text-3xl font-extrabold text-primary">Crea tu cuenta</h1>
@@ -94,15 +114,16 @@ export default function Registro() {
             </label>
           ))}
         </fieldset>
+        {T.aviso && <p className="text-sm rounded-xl bg-primary-container/15 p-3 flex gap-2"><Icon name="info" className="text-primary" />{T.aviso}</p>}
         <BotonGoogle onCredencial={conGoogle} onError={setError} />
-        <div id="r-nombre"><Campo etiqueta="Nombre del negocio u organización" error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={set('nombre')} onBlur={alSalir('nombre')} placeholder="Ej. Panadería San Martín" autoComplete="organization" /></Campo></div>
+        <div id="r-nombre"><Campo etiqueta={T.nombre} error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={set('nombre')} onBlur={alSalir('nombre')} placeholder={T.placeholder} autoComplete="organization" /></Campo></div>
         <div id="r-correo"><Campo etiqueta="Correo electrónico" error={errs.correo}><input className="input" type="email" name="email" id="registro-email" inputMode="email" maxLength={254} autoComplete="username" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo></div>
         <div className="grid gap-4">
-          <div id="r-telefono"><Campo etiqueta="Teléfono de contacto" ayuda="Solo se comparte con quien reserve o reciba tu donación." error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo></div>
-          <div id="r-direccion"><span className="block text-sm font-semibold mb-1">Dirección</span>
+          <div id="r-telefono"><Campo etiqueta={T.telefono} ayuda={T.ayudaTelefono} error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo></div>
+          <div id="r-direccion"><span className="block text-sm font-semibold mb-1">{T.direccion}</span>
           <SelectorUbicacion requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => { setF((x) => ({ ...x, direccion: v })); setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} punto={punto} onPunto={(v) => { setPunto(v); if (v) setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} />
           {errs.direccion && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.direccion}</p>}
-          <p className="text-xs text-on-surface-variant mt-1">Obligatoria: elige una sugerencia de la lista o toca el mapa para confirmar que el lugar existe.</p></div>
+          <p className="text-xs text-on-surface-variant mt-1">Obligatoria. {T.ayudaDireccion}</p></div>
         </div>
         <div id="r-password">
           <Campo etiqueta="Contraseña" error={errs.password}><CampoPassword name="new-password" id="registro-password" autoComplete="new-password" required={false} value={f.password} onChange={set('password')} onBlur={alSalir('password')} /></Campo>
@@ -120,6 +141,7 @@ export default function Registro() {
         <button className="btn-primary w-full" disabled={enviando}>{enviando ? 'Creando…' : 'Crear cuenta'}</button>
         <p className="text-center text-sm">¿Ya tienes cuenta? <Link to="/login" className="font-bold text-primary underline">Inicia sesión</Link></p>
       </form>
+      )}
       {verAviso && (
         <Modal titulo="Aviso de privacidad y términos" onCerrar={() => setVerAviso(false)}>
           <div className="space-y-4 text-sm">

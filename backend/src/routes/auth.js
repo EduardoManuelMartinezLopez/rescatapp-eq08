@@ -119,6 +119,7 @@ router.post('/login', asyncHandler(async (req, res) => {
 router.post('/google', asyncHandler(async (req, res) => {
   if (!process.env.GOOGLE_CLIENT_ID) return res.status(503).json({ error: 'El inicio de sesión con Google no está configurado en el servidor.' });
   const { credential, rol } = req.body || {};
+  const datos = req.body || {};
   if (typeof credential !== 'string' || !credential) return res.status(400).json({ error: 'Falta la credencial de Google.' });
 
   let perfil;
@@ -148,11 +149,19 @@ router.post('/google', asyncHandler(async (req, res) => {
   if (!rol) return res.json({ necesita_rol: true, perfil: { nombre: perfil.name || correo, correo } });
   if (!['donante', 'receptor'].includes(rol)) return res.status(400).json({ error: 'El rol debe ser "donante" o "receptor".' });
 
+  // Cuenta nueva con Google: se piden los mismos datos de contacto que en el registro normal
+  const nombreNuevo = limpiarTexto(datos.nombre || perfil.name || correo, 100).replace(/\s+/g, ' ');
+  const telefonoNuevo = texto(datos.telefono);
+  const direccionNueva = limpiarTexto(datos.direccion, 200).replace(/\s+/g, ' ');
+  const malos = [validarNombre(nombreNuevo), validarTelefono(telefonoNuevo, true), validarDireccion(direccionNueva), validarUbicacion(datos.latitud, datos.longitud)].filter(Boolean);
+  if (datos.acepta_terminos !== true) malos.push('Debes aceptar el aviso de privacidad y los términos de uso.');
+  if (malos.length) return res.status(400).json({ error: malos[0], detalles: malos });
+
   const hashAleatorio = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
   const nuevo = (await pool.query(
-    `INSERT INTO usuarios (nombre, correo, password_hash, rol, estado_validacion, google_id, password_definida, correo_verificado)
-     VALUES ($1,$2,$3,$4,$5,$6,FALSE,TRUE) RETURNING *`,
-    [texto(perfil.name || correo).slice(0, 120), correo, hashAleatorio, rol, rol === 'receptor' ? 'pendiente' : 'aprobada', perfil.sub])).rows[0];
+    `INSERT INTO usuarios (nombre, correo, password_hash, rol, telefono, direccion, estado_validacion, google_id, password_definida, correo_verificado)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,FALSE,TRUE) RETURNING *`,
+    [nombreNuevo, correo, hashAleatorio, rol, telefonoNuevo, direccionNueva, rol === 'receptor' ? 'pendiente' : 'aprobada', perfil.sub])).rows[0];
   if (rol === 'receptor') await avisarAdmins(pool, nuevo.nombre);
   res.status(201).json({ token: firmar(nuevo), usuario: publico(nuevo) });
 }));

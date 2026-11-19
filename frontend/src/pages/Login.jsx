@@ -7,6 +7,7 @@ import { Alerta, BotonTema, CampoPassword, Icon } from '../components/ui.jsx';
 import Globo from '../components/Globo.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
 import { guardarCredencial } from '../lib/credenciales.js';
+import DatosGoogle from '../components/DatosGoogle.jsx';
 
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 const LEYENDA = { reposo: 'Oaxaca de Juárez', cargando: 'Conectando…', listo: '¡Bienvenido!' };
@@ -21,6 +22,7 @@ export default function Login() {
   const [aviso] = useState(() => tomarAviso());
   const [estado, setEstado] = useState('reposo'); // estado del globo: reposo | cargando | listo
   const [googlePendiente, setGooglePendiente] = useState(null);
+  const [rolGoogle, setRolGoogle] = useState(null); // rol elegido por quien crea la cuenta con Google
 
   // El globo gira rápido mientras se verifica, se detiene mirando a Oaxaca y entonces se abre la sesión
   async function entrar(obtener) {
@@ -42,10 +44,10 @@ export default function Login() {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const elegirRol = (rol) => {
-    const { credential } = googlePendiente; setGooglePendiente(null);
-    entrar(() => api('/auth/google', { method: 'POST', body: { credential, rol } }));
+  const enviarDatosGoogle = (datos) => {
+    entrar(() => api('/auth/google', { method: 'POST', body: { credential: googlePendiente.credential, rol: rolGoogle, ...datos } }));
   };
+  const cancelarGoogle = () => { setGooglePendiente(null); setRolGoogle(null); setError(''); };
   const ocupado = estado !== 'reposo';
 
   return (
@@ -64,14 +66,16 @@ export default function Login() {
       </section>
 
       <section className="flex items-center justify-center p-6">
-        {googlePendiente ? (
+        {googlePendiente && rolGoogle ? (
+          <DatosGoogle rol={rolGoogle} perfil={googlePendiente.perfil} onEnviar={enviarDatosGoogle} onVolver={() => { setRolGoogle(null); setError(''); }} error={error} ocupado={ocupado} />
+        ) : googlePendiente ? (
           <div className="w-full max-w-sm space-y-4 animate-pop">
             <h2 className="text-2xl font-extrabold">Un último paso</h2>
             <p className="text-on-surface-variant">Hola, <b>{googlePendiente.perfil.nombre}</b>. ¿Cómo participarás en RescatApp?</p>
-            <button className="btn-primary w-full" onClick={() => elegirRol('donante')}><Icon name="storefront" /> Soy negocio donante</button>
-            <button className="btn-ghost w-full" onClick={() => elegirRol('receptor')}><Icon name="diversity_1" /> Soy comedor u organización</button>
+            <button className="btn-primary w-full" onClick={() => setRolGoogle('donante')}><Icon name="storefront" /> Soy negocio donante</button>
+            <button className="btn-ghost w-full" onClick={() => setRolGoogle('receptor')}><Icon name="diversity_1" /> Soy comedor u organización</button>
             <p className="text-xs text-on-surface-variant">Las organizaciones receptoras deben ser validadas por un administrador antes de apartar alimentos.</p>
-            <button className="text-sm font-semibold text-primary" onClick={() => setGooglePendiente(null)}>Cancelar</button>
+            <button className="text-sm font-semibold text-primary" onClick={cancelarGoogle}>Cancelar</button>
           </div>
         ) : (
           <form onSubmit={enviar} className="w-full max-w-sm space-y-5 animate-fade-up">
