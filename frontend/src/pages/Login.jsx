@@ -45,7 +45,11 @@ export default function Login() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const enviarDatosGoogle = (datos) => {
-    entrar(() => api('/auth/google', { method: 'POST', body: { credential: googlePendiente.credential, rol: rolGoogle, ...datos } }));
+    entrar(async () => {
+      const d = await api('/auth/google', { method: 'POST', body: { credential: googlePendiente.credential, rol: rolGoogle, ...datos } });
+      if (datos.password) guardarCredencial(googlePendiente.perfil.correo, datos.password, datos.nombre);
+      return d;
+    });
   };
   const cancelarGoogle = () => { setGooglePendiente(null); setRolGoogle(null); setError(''); };
   const ocupado = estado !== 'reposo';

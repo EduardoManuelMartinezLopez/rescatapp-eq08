@@ -85,6 +85,7 @@ export default function Registro() {
     setError(''); setEnviando(true);
     try {
       const d = await api('/auth/google', { method: 'POST', body: { credential: googlePendiente.credential, rol: f.rol, ...datos } });
+      if (datos.password) guardarCredencial(googlePendiente.perfil.correo, datos.password, datos.nombre);
       nav(rutaInicial(aceptarSesion(d).rol), { replace: true });
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }

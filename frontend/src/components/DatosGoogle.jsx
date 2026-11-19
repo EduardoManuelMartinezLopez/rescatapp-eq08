@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { validarDireccion, validarNombre, validarTelefono, validarUbicacion } from '../reglas.js';
+import { validarDireccion, validarNombre, validarPassword, validarTelefono, validarUbicacion } from '../reglas.js';
 import { TEXTO_ROL } from '../lib/roles.js';
-import { Alerta, Campo, CampoTelefono, Icon, Modal } from './ui.jsx';
+import { Alerta, Campo, CampoPassword, CampoTelefono, Icon, IndicadorPassword, Modal } from './ui.jsx';
 import { ContenidoPrivacidad } from '../pages/Privacidad.jsx';
 import SelectorUbicacion from './SelectorUbicacion.jsx';
 
@@ -9,11 +9,13 @@ import SelectorUbicacion from './SelectorUbicacion.jsx';
 // con los textos propios del rol elegido (negocio donante u organización receptora).
 export default function DatosGoogle({ rol, perfil, onEnviar, onVolver, error, ocupado }) {
   const T = TEXTO_ROL[rol];
-  const [f, setF] = useState({ nombre: perfil?.nombre || '', telefono: '', direccion: '', acepta: false });
+  const [f, setF] = useState({ nombre: perfil?.nombre || '', telefono: '', direccion: '', password: '', password2: '', acepta: false });
   const [punto, setPunto] = useState(null);
   const [errs, setErrs] = useState({});
   const [verAviso, setVerAviso] = useState(false);
   const quitar = (k) => setErrs((p) => { const q = { ...p }; delete q[k]; return q; });
+
+  const conPassword = f.password !== '' || f.password2 !== '';
 
   function enviar(e) {
     e.preventDefault();
@@ -21,10 +23,15 @@ export default function DatosGoogle({ rol, perfil, onEnviar, onVolver, error, oc
     const n = validarNombre(f.nombre); if (n) m.nombre = n;
     const t = validarTelefono(f.telefono, true); if (t) m.telefono = t;
     const d = validarDireccion(f.direccion) || validarUbicacion(punto?.[0], punto?.[1]); if (d) m.direccion = d;
+    // La contraseña es opcional: si se deja vacía, la cuenta entra solo con el botón de Google
+    if (conPassword) {
+      const pw = validarPassword(f.password, { correo: perfil?.correo, nombre: f.nombre }); if (pw.length) m.password = pw[0];
+      if (!f.password2) m.password2 = 'Repite la contraseña.'; else if (f.password2 !== f.password) m.password2 = 'Las contraseñas no coinciden.';
+    }
     if (!f.acepta) m.acepta = 'Debes aceptar el aviso de privacidad y los términos para crear tu cuenta.';
     setErrs(m);
     if (Object.keys(m).length) return;
-    onEnviar({ nombre: f.nombre, telefono: f.telefono, direccion: f.direccion, latitud: punto[0], longitud: punto[1], acepta_terminos: true });
+    onEnviar({ nombre: f.nombre, telefono: f.telefono, direccion: f.direccion, latitud: punto[0], longitud: punto[1], ...(conPassword ? { password: f.password } : {}), acepta_terminos: true });
   }
 
   return (
@@ -51,6 +58,17 @@ export default function DatosGoogle({ rol, perfil, onEnviar, onVolver, error, oc
         <p className="text-xs text-on-surface-variant mt-1">Obligatoria. {T.ayudaDireccion}</p>
       </div>
       <div>
+        <Campo etiqueta="Crea una contraseña (opcional)" ayuda={`Con ella también podrás entrar con ${perfil?.correo || 'tu correo'} y tu navegador podrá recordarla. Si la dejas vacía, entrarás solo con el botón de Google.`} error={errs.password}>
+          <CampoPassword name="new-password" id="google-password" autoComplete="new-password" required={false} value={f.password}
+            onChange={(e) => { setF({ ...f, password: e.target.value }); quitar('password'); }} />
+        </Campo>
+        {f.password && <IndicadorPassword password={f.password} ctx={{ correo: perfil?.correo, nombre: f.nombre }} />}
+      </div>
+      <Campo etiqueta="Repite la contraseña" error={errs.password2}>
+        <CampoPassword name="new-password-confirm" id="google-password2" autoComplete="new-password" required={false} value={f.password2}
+          onChange={(e) => { setF({ ...f, password2: e.target.value }); quitar('password2'); }} />
+      </Campo>
+      <div>
         <label className="flex gap-3 items-start cursor-pointer">
           <input type="checkbox" className="mt-1 w-6 h-6 accent-primary shrink-0" checked={f.acepta}
             onChange={(e) => { setF({ ...f, acepta: e.target.checked }); quitar('acepta'); }} />
@@ -58,7 +76,7 @@ export default function DatosGoogle({ rol, perfil, onEnviar, onVolver, error, oc
         </label>
         {errs.acepta && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.acepta}</p>}
       </div>
-      <button className="btn-primary w-full" disabled={ocupado}>{ocupado ? 'Creando…' : 'Crear cuenta'}</button>
+      <button className="btn-primary w-full" disabled={ocupado}>{ocupado ? 'Creando…' : conPassword ? 'Crear cuenta' : 'Omitir contraseña y crear cuenta'}</button>
       <button type="button" className="text-sm font-semibold text-primary" onClick={onVolver}>Cancelar</button>
       {verAviso && (
         <Modal titulo="Aviso de privacidad y términos" onCerrar={() => setVerAviso(false)}>
