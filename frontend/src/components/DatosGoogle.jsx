@@ -55,7 +55,7 @@ export default function DatosGoogle({ rol, perfil, onEnviar, onVolver, error, oc
           onDireccion={(v) => { setF((x) => ({ ...x, direccion: v })); quitar('direccion'); }}
           punto={punto} onPunto={(v) => { setPunto(v); if (v) quitar('direccion'); }} />
         {errs.direccion && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.direccion}</p>}
-        <p className="text-xs text-on-surface-variant mt-1">Obligatoria. {T.ayudaDireccion}</p>
+        <p className="text-xs text-on-surface-variant mt-1">{T.ayudaDireccion}</p>
       </div>
       <div>
         <Campo etiqueta="Crea una contraseña (opcional)" ayuda={`Con ella también podrás entrar con ${perfil?.correo || 'tu correo'} y tu navegador podrá recordarla. Si la dejas vacía, entrarás solo con el botón de Google.`} error={errs.password}>

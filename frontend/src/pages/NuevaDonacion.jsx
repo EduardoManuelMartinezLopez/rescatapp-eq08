@@ -31,6 +31,8 @@ function reducirFoto(archivo) {
   });
 }
 
+// Al menos dos letras (con acentos y ñ)
+const TIENE_LETRAS = /\p{L}[^\p{L}]*\p{L}/u;
 const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 function horarioInicial() {
   const a = new Date(Date.now() + 3600000); a.setMinutes(0, 0, 0);
@@ -94,6 +96,8 @@ export default function NuevaDonacion() {
     e.preventDefault(); setError(''); setMalo('');
     // Se revisa en el orden en que aparecen los campos y se lleva a la persona al primero que esté mal
     if (f.titulo.trim().length < 3) return fallar('titulo', 'Escribe el título del alimento (mínimo 3 letras).');
+    if (!TIENE_LETRAS.test(f.titulo)) return fallar('titulo', 'El título debe incluir letras (por ejemplo «Pan dulce»), no solo números o símbolos.');
+    if (f.descripcion.trim() && !TIENE_LETRAS.test(f.descripcion)) return fallar('descripcion', 'La descripción debe incluir letras: cuéntanos cómo está el alimento, no solo números o símbolos.');
     if (!(Number(f.kilos) > 0)) return fallar('kilos', 'Escribe cuántos kilos aproximados hay (mayor que 0).');
     if (Number(f.kilos) > 1000) return fallar('kilos', 'El máximo por donación es de 1000 kg. Si tienes más, divídelo en varias donaciones.');
     const cad = new Date(f.fecha_caducidad);
@@ -115,7 +119,7 @@ export default function NuevaDonacion() {
       nav('/mis-donaciones');
     } catch (err) {
       const txt = [err.message, ...(err.detalles || [])].join(' ');
-      const campo = /t[ií]tulo/i.test(txt) ? 'titulo' : /kilos/i.test(txt) ? 'kilos' : /caducidad/i.test(txt) ? 'caducidad' : /direcci|latitud|longitud/i.test(txt) ? 'direccion' : '';
+      const campo = /t[ií]tulo/i.test(txt) ? 'titulo' : /descripci/i.test(txt) ? 'descripcion' : /kilos/i.test(txt) ? 'kilos' : /caducidad/i.test(txt) ? 'caducidad' : /direcci|latitud|longitud/i.test(txt) ? 'direccion' : '';
       if (campo) fallar(campo, (err.detalles && err.detalles[0]) || err.message); else setError(err.message);
     }
     finally { setEnviando(false); }
@@ -131,11 +135,14 @@ export default function NuevaDonacion() {
         <h1 className="text-2xl font-extrabold">{editando ? 'Editar donación' : 'Nueva donación'}</h1>
         <p className="text-on-surface-variant">{editando ? 'Corrige lo que necesites. Solo se puede editar mientras nadie la haya apartado.' : 'Comparte tus excedentes con comedores y albergues de la comunidad.'}</p>
       </div>
+      {!editando && usuario.correo_verificado === false && (
+        <Alerta tipo="aviso">Para publicar necesitas <b>confirmar tu correo</b>. Abre el enlace que te enviamos (revisa también spam) o pide uno nuevo con el aviso de la parte superior de la pantalla.</Alerta>
+      )}
       {!malo && <Alerta>{error}</Alerta>}
 
       <div className="card p-5 space-y-4">
         <Campo etiqueta="Título del alimento *"><input id="f-titulo" className={`input ${rojo('titulo')}`} required minLength={3} maxLength={100} value={f.titulo} onChange={set('titulo')} placeholder="Ej. Pan dulce y bolillo del día" />{msgCampo('titulo')}</Campo>
-        <Campo etiqueta="Descripción y estado"><textarea className="input !py-3" rows={3} maxLength={500} value={f.descripcion} onChange={set('descripcion')} placeholder="Elaborado hoy, empacado higiénicamente…" /></Campo>
+        <Campo etiqueta="Descripción y estado"><textarea id="f-descripcion" className={`input !py-3 ${rojo('descripcion')}`} rows={3} maxLength={500} value={f.descripcion} onChange={set('descripcion')} placeholder="Elaborado hoy, empacado higiénicamente…" />{msgCampo('descripcion')}</Campo>
         <div className="grid sm:grid-cols-2 gap-4">
           <Campo etiqueta="Categoría *"><select className="input" value={f.categoria} onChange={set('categoria')}>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}</select></Campo>
           <Campo etiqueta="Cantidad aproximada (kg) *"><input id="f-kilos" className={`input ${rojo('kilos')}`} type="number" required min="0.1" max="1000" step="0.1" inputMode="decimal" value={f.kilos} onChange={set('kilos')} />{msgCampo('kilos')}</Campo>
@@ -185,7 +192,8 @@ export default function NuevaDonacion() {
 
       <div id="f-direccion" className={`card p-5 space-y-2 ${malo === 'direccion' ? '!border-error ring-2 ring-error/30' : ''}`}>
         <p className="text-sm font-semibold">Dirección de recolección *</p>
-        <SelectorUbicacion direccion={dir} onDireccion={(v) => { setDir(v); limpiar('direccion'); }} punto={punto} onPunto={(v) => { setPunto(v); limpiar('direccion'); }} />
+        {!editando && usuario.direccion && <p className="text-xs text-on-surface-variant -mt-1">Usamos la dirección de tu perfil. Puedes cambiarla si esta donación se recoge en otro lugar.</p>}
+        <SelectorUbicacion autoBuscar={!editando} direccion={dir} onDireccion={(v) => { setDir(v); limpiar('direccion'); }} punto={punto} onPunto={(v) => { setPunto(v); limpiar('direccion'); }} />
         {msgCampo('direccion')}
       </div>
 

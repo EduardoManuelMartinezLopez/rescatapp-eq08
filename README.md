@@ -92,7 +92,7 @@ npm run dev
 La aplicación abre en `http://localhost:5173`. En desarrollo, Vite envía las llamadas `/api` al backend en el puerto 3000.
 
 ## Pruebas
-- Automáticas: `cd backend` y `npm test`. Son 23 pruebas que usan la base `rescatapp_test`, que debe crearse antes con el mismo script SQL.
+- Automáticas: `cd backend` y `npm test`. Son 46 pruebas que usan la base `rescatapp_test`, que debe crearse antes con el mismo script SQL.
 - API: importar `backend/postman` en Postman y ejecutar la colección.
 
 ## Despliegue en producción

@@ -59,6 +59,10 @@ router.get('/mine', requerirRol('donante'), asyncHandler(async (req, res) => {
 
 // POST /api/donations/publish  -> publicar una donación (solo donantes)
 router.post('/publish', requerirRol('donante'), asyncHandler(async (req, res) => {
+  const me = await pool.query('SELECT correo_verificado FROM usuarios WHERE id_usuario = $1', [req.usuario.id]);
+  if (!me.rows[0]?.correo_verificado) {
+    return res.status(403).json({ error: 'Confirma tu correo antes de publicar donaciones: abre el enlace que te enviamos (o pide uno nuevo desde tu perfil).', codigo: 'correo_sin_confirmar' });
+  }
   const errores = validarDonacion(req.body);
   const f = leerFoto(req.body?.foto);
   if (!f.ok) errores.push(f.error);
@@ -122,15 +126,16 @@ router.delete('/:id', requerirRol('donante'), asyncHandler(async (req, res) => {
   const d = rows[0];
   if (!d) return res.status(404).json({ error: 'La donación no existe.' });
   if (d.id_donante !== req.usuario.id) return res.status(403).json({ error: 'Esta donación no es tuya.' });
-  if (d.estado !== 'publicada') return res.status(409).json({ error: 'Solo se puede retirar una donación en estado "publicada".' });
+  if (d.estado !== 'publicada') return res.status(409).json({ error: 'Solo se puede borrar una donación en estado "publicada".' });
   try {
     await pool.query('DELETE FROM donaciones WHERE id_donacion = $1', [id]);
+    return res.json({ mensaje: 'Donación borrada de forma permanente.' });
   } catch (err) {
     if (err.code !== '23503') throw err;
     // Ya tuvo una reserva (cancelada): se conserva el historial y solo se saca del mapa pasándola a "expirada"
     await pool.query("UPDATE donaciones SET estado = 'expirada', fecha_caducidad = LEAST(fecha_caducidad, NOW()) WHERE id_donacion = $1", [id]);
   }
-  res.json({ mensaje: 'Donación retirada.' });
+  res.json({ mensaje: 'Donación borrada. Como ya había tenido una reserva, se conserva en el historial como vencida.' });
 }));
 
 module.exports = router;

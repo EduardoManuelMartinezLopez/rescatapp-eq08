@@ -32,6 +32,17 @@ const firmar = (u) =>
     algorithm: 'HS256', expiresIn: process.env.JWT_EXPIRES || '8h',
   });
 
+// ¿Ya hay otra cuenta con este teléfono? (se comparan solo los últimos 10 dígitos, sin lada ni espacios)
+const soloDigitos = (t) => String(t || '').replace(/\D/g, '').slice(-10);
+async function telefonoEnUso(tel, exceptoId = 0) {
+  const d = soloDigitos(tel);
+  if (d.length < 10) return false;
+  const r = await pool.query(
+    "SELECT 1 FROM usuarios WHERE id_usuario <> $2 AND telefono IS NOT NULL AND RIGHT(regexp_replace(telefono, '\\D', '', 'g'), 10) = $1 LIMIT 1", [d, exceptoId]);
+  return r.rowCount > 0;
+}
+const MSG_TEL_REPETIDO = 'Ese teléfono ya está registrado en otra cuenta. Usa uno distinto.';
+
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
 // Avisa a los administradores que hay una organización nueva por validar
@@ -50,15 +61,17 @@ async function enviarVerificacion(u) {
     await pool.query(
       "INSERT INTO verificaciones_correo (id_usuario, token_hash, expira) VALUES ($1,$2, NOW() + INTERVAL '24 hours')",
       [u.id_usuario, sha256(token)]);
-    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verificar?token=${token}`;
+    const base = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const enlace = `${base}/verificar?token=${token}`;
+    const enlaceNo = `${base}/no-fui-yo?token=${token}`;
     await enviarCorreo({
       para: u.correo, asunto: 'Confirma tu correo en RescatApp',
-      texto: `Hola ${u.nombre}:\n\nConfirma tu correo abriendo este enlace (vence en 24 horas):\n${enlace}\n\nSi no creaste la cuenta, ignora este mensaje.`,
+      texto: `Hola ${u.nombre}:\n\nConfirma tu correo abriendo este enlace (vence en 24 horas):\n${enlace}\n\nSi NO creaste esta cuenta, abre este otro enlace para eliminarla:\n${enlaceNo}`,
       html: plantillaHtml({
         titulo: 'Confirma tu correo',
         parrafos: [`Hola ${u.nombre}:`, 'Gracias por registrarte. Confirma que este correo es tuyo para proteger tu cuenta. El enlace vence en 24 horas.'],
         boton: { texto: 'Confirmar mi correo', url: enlace },
-        pie: 'Si no creaste una cuenta en RescatApp, ignora este mensaje.',
+        pie: `Si no creaste una cuenta en RescatApp, abre este enlace para eliminarla: ${enlaceNo}`,
       }),
     });
     return process.env.DEV_SHOW_RESET_LINK === 'true' ? enlace : null;
@@ -71,6 +84,7 @@ router.post('/register', limitarRegistro, asyncHandler(async (req, res) => {
   if (errores.length) return res.status(400).json({ error: 'Datos inválidos.', detalles: errores });
 
   const { nombre, correo, password, rol, telefono, direccion } = req.body;
+  if (await telefonoEnUso(telefono)) return res.status(400).json({ error: MSG_TEL_REPETIDO, detalles: [MSG_TEL_REPETIDO] });
   const hash = await bcrypt.hash(password, 10);
   // RD-04: los receptores quedan "pendiente" hasta que un administrador los apruebe
   const estado = rol === 'receptor' ? 'pendiente' : 'aprobada';
@@ -154,14 +168,18 @@ router.post('/google', asyncHandler(async (req, res) => {
   const telefonoNuevo = texto(datos.telefono);
   const direccionNueva = limpiarTexto(datos.direccion, 200).replace(/\s+/g, ' ');
   const malos = [validarNombre(nombreNuevo), validarTelefono(telefonoNuevo, true), validarDireccion(direccionNueva), validarUbicacion(datos.latitud, datos.longitud)].filter(Boolean);
+  const conPassword = typeof datos.password === 'string' && datos.password !== '';
+  if (conPassword) malos.push(...validarPassword(datos.password, { correo, nombre: nombreNuevo }).slice(0, 1));
+  if (!malos.length && await telefonoEnUso(telefonoNuevo)) malos.push(MSG_TEL_REPETIDO);
   if (datos.acepta_terminos !== true) malos.push('Debes aceptar el aviso de privacidad y los términos de uso.');
   if (malos.length) return res.status(400).json({ error: malos[0], detalles: malos });
 
-  const hashAleatorio = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+  // Si la persona definió una contraseña en este paso, la cuenta también podrá entrar con correo y contraseña
+  const hashAleatorio = await bcrypt.hash(conPassword ? datos.password : crypto.randomBytes(32).toString('hex'), 10);
   const nuevo = (await pool.query(
     `INSERT INTO usuarios (nombre, correo, password_hash, rol, telefono, direccion, estado_validacion, google_id, password_definida, correo_verificado)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,FALSE,TRUE) RETURNING *`,
-    [nombreNuevo, correo, hashAleatorio, rol, telefonoNuevo, direccionNueva, rol === 'receptor' ? 'pendiente' : 'aprobada', perfil.sub])).rows[0];
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE) RETURNING *`,
+    [nombreNuevo, correo, hashAleatorio, rol, telefonoNuevo, direccionNueva, rol === 'receptor' ? 'pendiente' : 'aprobada', perfil.sub, conPassword])).rows[0];
   if (rol === 'receptor') await avisarAdmins(pool, nuevo.nombre);
   res.status(201).json({ token: firmar(nuevo), usuario: publico(nuevo) });
 }));
@@ -212,7 +230,8 @@ router.post('/reset', asyncHandler(async (req, res) => {
     const dueno = (await client.query('SELECT nombre, correo FROM usuarios WHERE id_usuario = $1', [rows[0].id_usuario])).rows[0];
     const errPw = validarPassword(password, dueno);
     if (errPw.length) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Contraseña no válida.', detalles: errPw }); }
-    await client.query('UPDATE usuarios SET password_hash = $1, password_definida = TRUE WHERE id_usuario = $2',
+    // sesion_desde: las sesiones abiertas antes de este momento (por ejemplo, la de quien robó la contraseña) dejan de servir
+    await client.query('UPDATE usuarios SET password_hash = $1, password_definida = TRUE, sesion_desde = NOW() WHERE id_usuario = $2',
       [await bcrypt.hash(password, 10), rows[0].id_usuario]);
     await client.query('UPDATE password_resets SET usado = TRUE WHERE id_usuario = $1', [rows[0].id_usuario]);
     // Si abrió el enlace desde su correo, también queda comprobado que el correo es suyo
@@ -248,6 +267,7 @@ router.patch('/me', autenticar, asyncHandler(async (req, res) => {
   // Si cambió la dirección, debe venir de un punto real del mapa
   if (direccion && direccion !== (actual.direccion || '')) errores.push(validarUbicacion(req.body?.latitud, req.body?.longitud));
   const malos = errores.filter(Boolean);
+  if (!malos.length && telefono && await telefonoEnUso(telefono, req.usuario.id)) malos.push(MSG_TEL_REPETIDO);
   if (malos.length) return res.status(400).json({ error: malos[0], detalles: malos });
   const { rows } = await pool.query(
     'UPDATE usuarios SET nombre = $1, telefono = $2, direccion = $3 WHERE id_usuario = $4 RETURNING *',
@@ -280,6 +300,20 @@ router.post('/verify', asyncHandler(async (req, res) => {
   if (!rows[0]) return res.status(400).json({ error: 'El enlace no es válido o ya venció. Pide uno nuevo desde tu cuenta.' });
   await pool.query('UPDATE usuarios SET correo_verificado = TRUE WHERE id_usuario = $1', [rows[0].id_usuario]);
   res.json({ mensaje: 'Correo confirmado. ¡Gracias!' });
+}));
+
+// POST /api/auth/discard  { token }  -> "no fui yo": elimina una cuenta que nunca confirmó su correo
+router.post('/discard', asyncHandler(async (req, res) => {
+  const { token } = req.body || {};
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return res.status(400).json({ error: 'El enlace no es válido o ya venció.' });
+  const { rows } = await pool.query(
+    `SELECT u.id_usuario, u.correo_verificado FROM verificaciones_correo v JOIN usuarios u ON u.id_usuario = v.id_usuario
+      WHERE v.token_hash = $1 AND v.expira > NOW()`, [sha256(token)]);
+  if (!rows[0]) return res.status(400).json({ error: 'El enlace no es válido o ya venció.' });
+  if (rows[0].correo_verificado) return res.status(400).json({ error: 'Esa cuenta ya fue confirmada, por eso no se puede eliminar con este enlace. Si no es tuya, escríbenos.' });
+  try { await pool.query('DELETE FROM usuarios WHERE id_usuario = $1 AND correo_verificado = FALSE', [rows[0].id_usuario]); }
+  catch (err) { if (err.code === '23503') return res.status(409).json({ error: 'Esa cuenta ya tiene actividad y no se puede eliminar con este enlace.' }); throw err; }
+  res.json({ mensaje: 'Listo: eliminamos esa cuenta. Nadie podrá usar tu correo en RescatApp.' });
 }));
 
 // POST /api/auth/resend-verification  (con sesión iniciada)

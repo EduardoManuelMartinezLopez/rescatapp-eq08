@@ -9,6 +9,7 @@ import RestablecerPassword from './pages/RestablecerPassword.jsx';
 import Perfil from './pages/Perfil.jsx';
 import Privacidad from './pages/Privacidad.jsx';
 import VerificarCorreo from './pages/VerificarCorreo.jsx';
+import NoFuiYo from './pages/NoFuiYo.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Mapa from './pages/Mapa.jsx';
 import MisReservas from './pages/MisReservas.jsx';
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/restablecer" element={<RestablecerPassword />} />
       <Route path="/privacidad" element={<Privacidad />} />
       <Route path="/verificar" element={<VerificarCorreo />} />
+      <Route path="/no-fui-yo" element={<NoFuiYo />} />
       <Route element={usuario ? <Layout /> : <Navigate to="/login" replace />}>
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/mapa" element={<Protegida roles={['receptor']}><Mapa /></Protegida>} />

@@ -3,6 +3,11 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet';
 import { Icon } from './ui.jsx';
 import { CENTRO_OAXACA } from '../utils.js';
+import { validarUbicacion } from '../reglas.js';
+
+// Los errores de red del navegador llegan en inglés («Failed to fetch»): se cambian por un aviso claro
+const SIN_RED = 'No hay conexión con el buscador de direcciones. Revisa tu internet o toca el mapa para marcar el punto.';
+const textoError = (e) => (e instanceof TypeError || /fetch|network|load failed/i.test(e?.message || '') ? SIN_RED : (e?.message || SIN_RED));
 
 const pin = L.divIcon({ className: '', html: '<div style="width:24px;height:24px;border-radius:50%;background:#944a00;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
 const NOM = 'https://nominatim.openstreetmap.org';
@@ -86,7 +91,7 @@ function Volar({ punto }) {
 }
 
 // Dirección escrita ⇄ punto en el mapa: si escribes y buscas, se marca; si tocas el mapa, se escribe.
-export default function SelectorUbicacion({ direccion, onDireccion, punto, onPunto, plegable = false, alto = 280, requerida = true }) {
+export default function SelectorUbicacion({ direccion, onDireccion, punto, onPunto, plegable = false, alto = 280, requerida = true, autoBuscar = false }) {
   const [resultados, setResultados] = useState([]);
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState('');
@@ -103,6 +108,16 @@ export default function SelectorUbicacion({ direccion, onDireccion, punto, onPun
     return () => clearTimeout(t);
   }, [direccion]);
 
+  // Dirección guardada en el perfil: se busca sola en el mapa para no tener que escribirla de nuevo (solo se marca el punto)
+  useEffect(() => {
+    const q = (direccion || '').trim();
+    if (!autoBuscar || punto || q.length < 5) return;
+    let vivo = true;
+    buscar(q).then((r) => { if (vivo && r[0] && !validarUbicacion(r[0].lat, r[0].lng)) { onPunto([r[0].lat, r[0].lng]); setVerMapa(true); } }).catch(() => {});
+    return () => { vivo = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function ir() {
     if ((direccion || '').trim().length < 3) return setMsg('Escribe al menos 3 letras de la dirección para buscarla.');
     tecleando.current = false;
@@ -111,15 +126,20 @@ export default function SelectorUbicacion({ direccion, onDireccion, punto, onPun
       const r = await buscar(direccion);
       if (r.length === 0) setMsg('No encontré esa dirección. Prueba solo con el nombre de la calle o colonia (ej. «Reforma, Oaxaca»), o tócala directamente en el mapa.');
       setResultados(r);
-    } catch (e) { setMsg(e.message); }
+    } catch (e) { setMsg(textoError(e)); }
     finally { setOcupado(false); }
   }
-  const elegir = (r) => { tecleando.current = false; onDireccion(r.texto); onPunto([r.lat, r.lng]); setResultados([]); setVerMapa(true); setMsg(''); };
+  const elegir = (r) => {
+    const fuera = validarUbicacion(r.lat, r.lng);
+    if (fuera) { setMsg(`${fuera} Elige un lugar dentro de Oaxaca.`); return; }
+    tecleando.current = false; onDireccion(r.texto); onPunto([r.lat, r.lng]); setResultados([]); setVerMapa(true); setMsg(''); };
   async function alMapa(p) {
+    const fuera = validarUbicacion(p[0], p[1]);
+    if (fuera) { setMsg(`${fuera} Marca un punto dentro de Oaxaca.`); return; }
     tecleando.current = false;
     onPunto(p); setOcupado(true); setMsg(''); setResultados([]);
     try { onDireccion(await inversa(p[0], p[1])); }
-    catch (e) { setMsg(`${e.message} Puedes escribirla tú.`); }
+    catch (e) { setMsg(`${textoError(e)} Puedes escribirla tú.`); }
     finally { setOcupado(false); }
   }
   function miUbicacion() {

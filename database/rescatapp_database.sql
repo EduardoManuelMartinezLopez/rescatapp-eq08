@@ -38,7 +38,9 @@ CREATE TABLE usuarios (
     google_id         VARCHAR(64)  UNIQUE,
     password_definida BOOLEAN      NOT NULL DEFAULT TRUE,  -- FALSE si la cuenta se creó con Google
     -- v3: confirmación del correo con enlace (las cuentas de Google ya vienen verificadas)
-    correo_verificado BOOLEAN      NOT NULL DEFAULT FALSE
+    correo_verificado BOOLEAN      NOT NULL DEFAULT FALSE,
+    -- v4: las sesiones iniciadas antes de esta fecha dejan de valer (se actualiza al restablecer la contraseña)
+    sesion_desde      TIMESTAMPTZ
 );
 
 -- ---------------------------------------------------------------------

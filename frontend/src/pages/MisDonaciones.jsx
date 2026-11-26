@@ -66,6 +66,7 @@ export default function MisDonaciones() {
               </div>
               <h2 className="text-lg font-bold">{d.titulo}</h2>
               <p className="text-sm text-on-surface-variant">{d.kilos} kg · {d.direccion}</p>
+              {d.descripcion && <p className="text-sm">{d.descripcion}</p>}
               {d.estado === 'publicada' && <p className="text-sm font-bold text-secondary">Caduca en {tiempoRestante(d.fecha_caducidad)}</p>}
               {d.estado === 'reservada' && <p className="text-sm">Apartada por <b>{d.receptor_nombre}</b>. Horario: {verHorario(d.horario_recoleccion) || '—'}</p>}
               {d.estado === 'recogida' && <p className="text-sm text-on-surface-variant">Recogida por {d.receptor_nombre}</p>}
@@ -79,13 +80,13 @@ export default function MisDonaciones() {
               <div className="flex gap-2 pt-1">
                 {d.estado === 'reservada' && d.estado_reserva === 'activa' && <button className="btn-primary flex-1" onClick={() => confirmar(d)}><Icon name="check_circle" /> Confirmar recolección</button>}
                 {d.estado === 'publicada' && <Link to={`/editar-donacion/${d.id_donacion}`} className="btn-ghost flex-1"><Icon name="edit" /> Editar</Link>}
-                {d.estado === 'publicada' && <button className="btn-ghost flex-1" onClick={() => retirar(d)}>Retirar</button>}
+                {d.estado === 'publicada' && <button className="btn-ghost flex-1" onClick={() => retirar(d)}><Icon name="delete" /> Borrar</button>}
               </div>
             </article>
           ))}
         </div>
       )}
-      {retirando && <ConfirmarModal titulo="¿Retirar esta donación?" texto={`"${retirando.titulo}" dejará de mostrarse a las organizaciones.`} textoBoton="Sí, retirar" peligro
+      {retirando && <ConfirmarModal  titulo="¿Borrar esta donación?" texto={`"${retirando.titulo}" se borrará de forma permanente y dejará de mostrarse a las organizaciones. Esta acción no se puede deshacer. Si solo quieres corregir algo, usa «Editar».`} textoBoton="Sí, borrar" peligro
         onConfirmar={() => accion(api(`/donations/${retirando.id_donacion}`, { method: 'DELETE' }))} onCerrar={() => setRetirando(null)} />}
       {calificando && <CalificarModal reserva={calificando.id_reserva} a={calificando.receptor_nombre} onCerrar={() => setCalificando(null)}
         onListo={() => { setCalificando(null); setAviso({ tipo: 'ok', texto: '¡Gracias por tu calificación!' }); cargar(); }} />}

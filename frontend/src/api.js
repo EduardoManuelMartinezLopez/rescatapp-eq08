@@ -17,7 +17,7 @@ export async function api(ruta, { method = 'GET', body } = {}) {
   try {
     res = await fetch(`/api${ruta}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está encendido el backend?');
+    throw new Error('No hay conexión con RescatApp en este momento. Revisa tu internet e inténtalo de nuevo en unos segundos.');
   }
   const datos = await res.json().catch(() => ({}));
   // Token vencido o inválido (no aplica al login): se avisa para cerrar la sesión con un mensaje claro

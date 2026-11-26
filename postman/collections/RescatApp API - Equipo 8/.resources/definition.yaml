@@ -1,4 +1,0 @@
-$kind: collection
-description: Pruebas de los endpoints de RescatApp. Requiere el backend en http://localhost:3000 y la base cargada con rescatapp_database.sql. Ejecutar con Collection Runner en orden.
-variables:
-  baseUrl: http://localhost:3000

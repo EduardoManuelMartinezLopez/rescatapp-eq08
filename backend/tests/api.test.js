@@ -16,6 +16,9 @@ const pool = require('../src/db');
 
 let server, base;
 const sufijo = Date.now();
+// Teléfono distinto en cada cuenta de prueba (la API no permite repetir teléfonos)
+let nTel = 0;
+const tel = () => `95${String(Date.now() % 1e6).padStart(6, '0')}${String(nTel++ % 100).padStart(2, '0')}`;
 const futuro = (horas = 6) => new Date(Date.now() + horas * 3600 * 1000).toISOString();
 
 async function api(metodo, ruta, { token, body } = {}) {
@@ -47,13 +50,13 @@ after(async () => { await new Promise((r) => server.close(r)); await pool.end();
 describe('Autenticación', () => {
   const correo = `auto${sufijo}@rescatapp.test`;
   test('registro válido responde 201 y no expone el hash', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(r.status, 201);
     assert.ok(r.datos.token);
     assert.ok(!JSON.stringify(r.datos).includes('password_hash'));
   });
   test('correo duplicado responde 409', async () => {
-    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const r = await api('POST', '/api/auth/register', { body: { nombre: 'Negocio Auto', correo, password: 'Prueba1234', rol: 'donante', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(r.status, 409);
   });
   test('datos inválidos responden 400', async () => {
@@ -77,7 +80,7 @@ describe('Recuperar contraseña y perfil', () => {
   const correo = `reset${sufijo}@rescatapp.test`;
   let enlace;
   test('forgot no revela si el correo existe', async () => {
-    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const a = await api('POST', '/api/auth/register', { body: { nombre: 'Persona Reset', correo, password: 'Vieja12345', rol: 'donante', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(a.status, 201);
     const existe = await api('POST', '/api/auth/forgot', { body: { correo } });
     const noExiste = await api('POST', '/api/auth/forgot', { body: { correo: `nadie${sufijo}@rescatapp.test` } });
@@ -149,7 +152,7 @@ describe('Donaciones, fotos y reservas', () => {
   });
   test('un receptor sin validar no puede apartar (403)', async () => {
     const correo = `pend${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Pendiente', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     assert.equal(reg.datos.usuario.estado_validacion, 'pendiente');
     const d = (await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase() })).datos.donacion;
     assert.equal((await api('POST', '/api/reservations/book', { token: reg.datos.token, body: { id_donacion: d.id_donacion } })).status, 403);
@@ -217,7 +220,7 @@ describe('Administrador', () => {
   });
   test('aprobar una organización le envía notificación', async () => {
     const correo = `aprob${sufijo}@rescatapp.test`;
-    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const reg = await api('POST', '/api/auth/register', { body: { nombre: 'Org Por Aprobar', correo, password: 'Prueba1234', rol: 'receptor', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
     const id = reg.datos.usuario.id_usuario;
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'quizas' } })).status, 400);
     assert.equal((await api('PATCH', `/api/admin/organizations/${id}`, { token: tAdmin, body: { estado_validacion: 'aprobada' } })).status, 200);
@@ -238,7 +241,7 @@ describe('Administrador', () => {
 });
 
 describe('Validaciones de entrada y seguridad', () => {
-  const reg = (extra) => api('POST', '/api/auth/register', { body: { nombre: 'Negocio Valido', correo: `val${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante', acepta_terminos: true, telefono: '9511234567', direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72, ...extra } });
+  const reg = (extra) => api('POST', '/api/auth/register', { body: { nombre: 'Negocio Valido', correo: `val${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72, ...extra } });
   test('rechaza contraseñas comunes o débiles', async () => {
     for (const password of ['12345678', 'Password1', 'abcdefgh', 'ABCDEFGH1', 'corta1A']) {
       assert.equal((await reg({ password })).status, 400, password);
@@ -260,7 +263,7 @@ describe('Validaciones de entrada y seguridad', () => {
     assert.equal((await reg({ telefono: 'abc' })).status, 400);
     assert.equal((await reg({ telefono: '' })).status, 400);
     assert.equal((await reg({ telefono: '+52 951123' })).status, 400);
-    assert.equal((await reg({ telefono: '9511234567' })).status, 201);
+    assert.equal((await reg({ telefono: tel() })).status, 201);
   });
   test('rechaza nombres sin sentido', async () => {
     for (const nombre of ['jkljkjkljkl', 'asdfgh', 'aaaaaa']) assert.equal((await reg({ nombre })).status, 400, nombre);
@@ -313,5 +316,85 @@ describe('Validaciones de entrada y seguridad', () => {
     const r = await api('POST', '/api/donations/publish', { token: t, body: donacionBase({ titulo: 'Pan <script>x</script> fresco' }) });
     assert.equal(r.status, 201);
     assert.ok(!r.datos.donacion.titulo.includes('<'));
+  });
+});
+
+describe('Revisión del Equipo 5 (v4)', () => {
+  before(() => require('../src/routes/auth').limpiarLimites()); // los límites por IP se reinician para no mezclar pruebas
+  const nuevoDonante = (extra = {}) => api('POST', '/api/auth/register', { body: {
+    nombre: 'Donante Revision', correo: `rev${Date.now()}${Math.random().toString(36).slice(2, 6)}@rescatapp.test`, password: 'Rescate#2026a', rol: 'donante',
+    acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72, ...extra } });
+
+  test('el título y la descripción deben incluir letras', async () => {
+    assert.equal((await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase({ titulo: '12345' }) })).status, 400);
+    assert.equal((await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase({ descripcion: '555 !!!' }) })).status, 400);
+    assert.equal((await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase({ titulo: 'Pan 2 bolsas', descripcion: 'Elaborado hoy' }) })).status, 201);
+  });
+  test('la ubicación de la donación debe estar en Oaxaca', async () => {
+    const r = await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase({ latitud: 19.43, longitud: -99.13 }) });
+    assert.equal(r.status, 400);
+    assert.ok(JSON.stringify(r.datos).includes('Oaxaca'));
+  });
+  test('sin confirmar el correo no se puede publicar; al confirmarlo sí', async () => {
+    const r = await nuevoDonante();
+    assert.equal(r.status, 201);
+    const pub = () => api('POST', '/api/donations/publish', { token: r.datos.token, body: donacionBase() });
+    const bloqueado = await pub();
+    assert.equal(bloqueado.status, 403);
+    assert.equal(bloqueado.datos.codigo, 'correo_sin_confirmar');
+    await api('POST', '/api/auth/verify', { body: { token: r.datos.enlace_verificacion_dev.split('token=')[1] } });
+    assert.equal((await pub()).status, 201);
+  });
+  test('no se permite repetir el teléfono en otra cuenta', async () => {
+    const t = tel();
+    assert.equal((await nuevoDonante({ telefono: t })).status, 201);
+    const otra = await nuevoDonante({ telefono: t });
+    assert.equal(otra.status, 400);
+    assert.ok(JSON.stringify(otra.datos).includes('teléfono'));
+  });
+  test('«no fui yo» elimina una cuenta sin confirmar y no una confirmada', async () => {
+    const a = await nuevoDonante();
+    const tokenA = a.datos.enlace_verificacion_dev.split('token=')[1];
+    assert.equal((await api('POST', '/api/auth/discard', { body: { token: tokenA } })).status, 200);
+    assert.equal((await api('POST', '/api/auth/login', { body: { correo: a.datos.usuario.correo, password: 'Rescate#2026a' } })).status, 401);
+    const b = await nuevoDonante();
+    const tokenB = b.datos.enlace_verificacion_dev.split('token=')[1];
+    await api('POST', '/api/auth/verify', { body: { token: tokenB } });
+    assert.equal((await api('POST', '/api/auth/discard', { body: { token: tokenB } })).status, 400);
+    assert.equal((await api('POST', '/api/auth/discard', { body: { token: 'x' } })).status, 400);
+  });
+  test('restablecer la contraseña cierra las sesiones abiertas', async () => {
+    const a = await nuevoDonante();
+    const antes = a.datos.token;
+    assert.equal((await api('GET', '/api/auth/me', { token: antes })).status, 200);
+    const f = await api('POST', '/api/auth/forgot', { body: { correo: a.datos.usuario.correo } });
+    const token = new URL(f.datos.enlace_dev).searchParams.get('token');
+    await new Promise((r) => setTimeout(r, 1100)); // el token se firma por segundo
+    assert.equal((await api('POST', '/api/auth/reset', { body: { token, password: 'Nueva#2026bb' } })).status, 200);
+    assert.equal((await api('GET', '/api/auth/me', { token: antes })).status, 401);
+    const nuevo = await login(a.datos.usuario.correo, 'Nueva#2026bb');
+    assert.equal((await api('GET', '/api/auth/me', { token: nuevo })).status, 200);
+  });
+  test('quien canceló una donación no puede volver a apartarla (otra organización sí)', async () => {
+    const d = (await api('POST', '/api/donations/publish', { token: tDonante, body: donacionBase({ titulo: 'Pan para cancelar' }) })).datos.donacion;
+    const b = await api('POST', '/api/reservations/book', { token: tRec1, body: { id_donacion: d.id_donacion } });
+    assert.equal(b.status, 201);
+    assert.equal((await api('PATCH', `/api/reservations/${b.datos.reserva.id_reserva}/cancel`, { token: tRec1 })).status, 200);
+    assert.equal((await api('POST', '/api/reservations/book', { token: tRec1, body: { id_donacion: d.id_donacion } })).status, 409);
+    assert.equal((await api('POST', '/api/reservations/book', { token: tRec2, body: { id_donacion: d.id_donacion } })).status, 201);
+  });
+  test('al aprobar una organización desaparece el aviso «por validar» del administrador', async () => {
+    const nombre = `Org Aviso ${sufijo}`;
+    const reg = await api('POST', '/api/auth/register', { body: { nombre, correo: `aviso${sufijo}@rescatapp.test`, password: 'Rescate#2026a', rol: 'receptor', acepta_terminos: true, telefono: tel(), direccion: 'Centro, Oaxaca de Juárez', latitud: 17.06, longitud: -96.72 } });
+    const hay = async () => (await api('GET', '/api/notifications', { token: tAdmin })).datos.notificaciones.some((x) => x.mensaje.includes(nombre));
+    assert.equal(await hay(), true);
+    await api('PATCH', `/api/admin/organizations/${reg.datos.usuario.id_usuario}`, { token: tAdmin, body: { estado_validacion: 'aprobada' } });
+    assert.equal(await hay(), false);
+  });
+  test('el reporte por fechas usa la hora de México', async () => {
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+    const r = await api('GET', `/api/admin/donations?desde=${hoy}&hasta=${hoy}`, { token: tAdmin });
+    assert.equal(r.status, 200);
+    assert.ok(r.datos.total >= 1);
   });
 });

@@ -7,7 +7,7 @@ import { fechaCorta } from '../utils.js';
 
 export default function AdminOrganizaciones() {
   const [params, setParams] = useSearchParams();
-  const VALIDOS = ['pendiente', 'aprobada', 'rechazada'];
+  const VALIDOS = ['pendiente', 'aprobada', 'rechazada', 'todas'];
   const [estado, setEstado] = useState(() => (VALIDOS.includes(params.get('f')) ? params.get('f') : 'pendiente'));
   const estadoActual = useRef(estado);
   estadoActual.current = estado;
@@ -48,11 +48,11 @@ export default function AdminOrganizaciones() {
       </div>
       <Alerta tipo={aviso?.tipo}>{aviso?.texto}</Alerta>
       <div className="flex gap-2 flex-wrap">
-        {['pendiente', 'aprobada', 'rechazada'].map((e) => (
-          <button key={e} onClick={() => setEstado(e)} className={`px-4 min-h-[44px] rounded-full font-semibold capitalize ${estado === e ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-lowest border border-outline-variant'}`}>{e}s</button>
+        {['pendiente', 'aprobada', 'rechazada', 'todas'].map((e) => (
+          <button key={e} onClick={() => setEstado(e)} className={`px-4 min-h-[44px] rounded-full font-semibold capitalize ${estado === e ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-lowest border border-outline-variant'}`}>{e === 'todas' ? e : `${e}s`}</button>
         ))}
       </div>
-      {cargando ? <Cargando /> : lista.length === 0 ? <Vacio icono="verified_user" titulo={`No hay organizaciones ${estado}s`} /> : (
+      {cargando ? <Cargando /> : lista.length === 0 ? <Vacio icono="verified_user" titulo={estado === 'todas' ? 'Aún no hay organizaciones registradas' : `No hay organizaciones ${estado}s`} /> : (
         <div className="grid md:grid-cols-2 gap-4">
           {lista.map((o) => (
             <article key={o.id_usuario} className="card card-hover animate-fade-up p-5 space-y-2">

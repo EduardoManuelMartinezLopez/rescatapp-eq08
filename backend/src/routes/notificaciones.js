@@ -8,9 +8,11 @@ router.use(autenticar);
 
 // GET /api/notifications
 router.get('/', asyncHandler(async (req, res) => {
+  // Las ya leídas se borran a los 7 días; la lista muestra todas las nuevas y las leídas más recientes
+  await pool.query("DELETE FROM notificaciones WHERE id_usuario = $1 AND leida = TRUE AND fecha < NOW() - INTERVAL '7 days'", [req.usuario.id]);
   const lista = await pool.query(
     `SELECT id_notificacion, tipo, mensaje, enlace, leida, fecha FROM notificaciones
-      WHERE id_usuario = $1 ORDER BY fecha DESC, id_notificacion DESC LIMIT 30`, [req.usuario.id]);
+      WHERE id_usuario = $1 ORDER BY leida ASC, fecha DESC, id_notificacion DESC LIMIT 30`, [req.usuario.id]);
   const n = await pool.query('SELECT COUNT(*) AS total FROM notificaciones WHERE id_usuario = $1 AND leida = FALSE', [req.usuario.id]);
   res.json({ no_leidas: n.rows[0].total, notificaciones: lista.rows });
 }));
@@ -19,6 +21,12 @@ router.get('/', asyncHandler(async (req, res) => {
 router.patch('/read-all', asyncHandler(async (req, res) => {
   await pool.query('UPDATE notificaciones SET leida = TRUE WHERE id_usuario = $1 AND leida = FALSE', [req.usuario.id]);
   res.json({ mensaje: 'Todas las notificaciones quedaron como leídas.' });
+}));
+
+// DELETE /api/notifications/read  -> quita de la lista las que ya leíste
+router.delete('/read', asyncHandler(async (req, res) => {
+  const r = await pool.query('DELETE FROM notificaciones WHERE id_usuario = $1 AND leida = TRUE', [req.usuario.id]);
+  res.json({ mensaje: 'Se quitaron las notificaciones leídas.', borradas: r.rowCount });
 }));
 
 // PATCH /api/notifications/:id/read

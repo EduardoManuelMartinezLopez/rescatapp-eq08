@@ -21,11 +21,14 @@ function validarRegistro(b = {}) {
   return e;
 }
 
+// Al menos dos letras (con acentos y ñ): evita títulos como "123" o "!!!"
+const TIENE_LETRAS = /\p{L}[^\p{L}]*\p{L}/u;
 function validarDonacion(b = {}) {
   const e = [];
   const titulo = R.limpiarTexto(b.titulo, 500);
   if (titulo.length < 3) e.push('El título es obligatorio (mínimo 3 caracteres).');
   else if (titulo.length > 100) e.push('El título es demasiado largo (máximo 100 caracteres).');
+  else if (!TIENE_LETRAS.test(titulo)) e.push('El título debe incluir letras (por ejemplo «Pan dulce»), no solo números o símbolos.');
   if (!CATEGORIAS.includes(b.categoria)) e.push('La categoría no es válida.');
   const kilos = Number(b.kilos);
   if (!Number.isFinite(kilos) || kilos <= 0) e.push('Los kilos deben ser un número mayor que 0.');
@@ -33,10 +36,13 @@ function validarDonacion(b = {}) {
   const dir = R.limpiarTexto(b.direccion, 500);
   if (dir.length < 5) e.push('La dirección es obligatoria (mínimo 5 caracteres).');
   else if (dir.length > 200) e.push('La dirección es demasiado larga (máximo 200 caracteres).');
-  if (b.descripcion && R.limpiarTexto(b.descripcion, 2000).length > 500) e.push('La descripción es demasiado larga (máximo 500 caracteres).');
+  const desc = R.limpiarTexto(b.descripcion, 2000);
+  if (desc.length > 500) e.push('La descripción es demasiado larga (máximo 500 caracteres).');
+  else if (desc && !TIENE_LETRAS.test(desc)) e.push('La descripción debe incluir letras: cuéntanos cómo está el alimento, no solo números o símbolos.');
   const lat = Number(b.latitud), lng = Number(b.longitud);
   if (!Number.isFinite(lat) || lat < -90 || lat > 90) e.push('La latitud no es válida.');
   if (!Number.isFinite(lng) || lng < -180 || lng > 180) e.push('La longitud no es válida.');
+  else if (Number.isFinite(lat)) { const u = R.validarUbicacion(lat, lng); if (u) e.push(u); } // debe estar en el estado de Oaxaca
   if (b.acepta_buena_fe !== true) e.push('Debes aceptar la declaración de buena fe.');
   const f = new Date(b.fecha_caducidad);
   if (!b.fecha_caducidad || Number.isNaN(f.getTime())) e.push('La fecha de caducidad es obligatoria.');

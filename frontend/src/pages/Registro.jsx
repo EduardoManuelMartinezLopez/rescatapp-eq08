@@ -66,7 +66,11 @@ export default function Registro() {
       const u = await registrar({ ...resto, acepta_terminos: acepta, latitud: punto[0], longitud: punto[1] });
       guardarCredencial(f.correo, f.password, f.nombre);
       nav(rutaInicial(u.rol), { replace: true });
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      // Teléfono repetido u otro error del servidor sobre ese campo: se muestra junto al campo
+      if (/tel[eé]fono/i.test(err.message)) { setErrs({ telefono: err.message }); setError('Revisa los campos marcados en rojo.'); document.getElementById('r-telefono')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      else setError(err.message);
+    }
     finally { setEnviando(false); }
   }
 
@@ -105,6 +109,7 @@ export default function Registro() {
           <p className="text-on-surface-variant">Únete a la red solidaria de rescate de alimentos en Oaxaca.</p>
         </div>
         <Alerta>{error}</Alerta>
+        <p className="text-xs text-on-surface-variant -mb-2">Los campos marcados con * son obligatorios.</p>
         <fieldset className="grid sm:grid-cols-2 gap-3">
           <legend className="text-sm font-semibold mb-2">Elige tu participación</legend>
           {ROLES.map((r) => (
@@ -118,19 +123,19 @@ export default function Registro() {
         {T.aviso && <p className="text-sm rounded-xl bg-primary-container/15 p-3 flex gap-2"><Icon name="info" className="text-primary" />{T.aviso}</p>}
         <BotonGoogle onCredencial={conGoogle} onError={setError} />
         <div id="r-nombre"><Campo etiqueta={T.nombre} error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={set('nombre')} onBlur={alSalir('nombre')} placeholder={T.placeholder} autoComplete="organization" /></Campo></div>
-        <div id="r-correo"><Campo etiqueta="Correo electrónico" error={errs.correo}><input className="input" type="email" name="email" id="registro-email" inputMode="email" maxLength={254} autoComplete="username" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo></div>
+        <div id="r-correo"><Campo etiqueta="Correo electrónico *" error={errs.correo}><input className="input" type="email" name="email" id="registro-email" inputMode="email" maxLength={254} autoComplete="username" value={f.correo} onChange={set('correo')} onBlur={alSalir('correo')} placeholder="nombre@correo.com" /></Campo></div>
         <div className="grid gap-4">
           <div id="r-telefono"><Campo etiqueta={T.telefono} ayuda={T.ayudaTelefono} error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo></div>
           <div id="r-direccion"><span className="block text-sm font-semibold mb-1">{T.direccion}</span>
           <SelectorUbicacion requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => { setF((x) => ({ ...x, direccion: v })); setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} punto={punto} onPunto={(v) => { setPunto(v); if (v) setErrs((p) => { const q = { ...p }; delete q.direccion; return q; }); }} />
           {errs.direccion && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.direccion}</p>}
-          <p className="text-xs text-on-surface-variant mt-1">Obligatoria. {T.ayudaDireccion}</p></div>
+          <p className="text-xs text-on-surface-variant mt-1">{T.ayudaDireccion}</p></div>
         </div>
         <div id="r-password">
-          <Campo etiqueta="Contraseña" error={errs.password}><CampoPassword name="new-password" id="registro-password" autoComplete="new-password" required={false} value={f.password} onChange={set('password')} onBlur={alSalir('password')} /></Campo>
+          <Campo etiqueta="Contraseña *" error={errs.password}><CampoPassword name="new-password" id="registro-password" autoComplete="new-password" required={false} value={f.password} onChange={set('password')} onBlur={alSalir('password')} /></Campo>
           <IndicadorPassword password={f.password} ctx={{ correo: f.correo, nombre: f.nombre }} />
         </div>
-        <div id="r-password2"><Campo etiqueta="Repite la contraseña" error={errs.password2}><CampoPassword name="new-password-confirm" id="registro-password2" autoComplete="new-password" required={false} value={f.password2} onChange={set('password2')} onBlur={alSalir('password2')} /></Campo></div>
+        <div id="r-password2"><Campo etiqueta="Repite la contraseña *" error={errs.password2}><CampoPassword name="new-password-confirm" id="registro-password2" autoComplete="new-password" required={false} value={f.password2} onChange={set('password2')} onBlur={alSalir('password2')} /></Campo></div>
         <div id="r-acepta">
           <label className="flex gap-3 items-start cursor-pointer">
             <input type="checkbox" className="mt-1 w-6 h-6 accent-primary shrink-0" checked={f.acepta} onChange={(e) => { setF({ ...f, acepta: e.target.checked }); setErrs((p) => { const q = { ...p }; delete q.acepta; return q; }); }} />

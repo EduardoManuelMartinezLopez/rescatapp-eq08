@@ -44,7 +44,7 @@ router.get('/metrics', asyncHandler(async (req, res) => {
 router.get('/organizations', asyncHandler(async (req, res) => {
   const params = [];
   let filtro = '';
-  if (['pendiente', 'aprobada', 'rechazada'].includes(req.query.estado)) {
+  if (['pendiente', 'aprobada', 'rechazada'].includes(req.query.estado)) { // sin estado (o "todas") se listan todas
     params.push(req.query.estado);
     filtro = ' AND u.estado_validacion = $1';
   }
@@ -67,6 +67,8 @@ router.patch('/organizations/:id', asyncHandler(async (req, res) => {
     `UPDATE usuarios SET estado_validacion = $1 WHERE id_usuario = $2 AND rol = 'receptor'
       RETURNING id_usuario, nombre, correo, estado_validacion`, [estado, id]);
   if (!rows[0]) return res.status(404).json({ error: 'La organización receptora no existe.' });
+  // La organización ya fue atendida: se quitan los avisos "por validar" de los administradores
+  await pool.query("DELETE FROM notificaciones WHERE tipo = 'org_pendiente' AND mensaje = $1", [`Nueva organización por validar: ${rows[0].nombre}.`]);
   if (estado === 'aprobada') await notificar(pool, id, 'validacion', '¡Tu organización fue aprobada! Ya puedes apartar donaciones.', '/mapa');
   if (estado === 'rechazada') await notificar(pool, id, 'validacion', 'Tu organización no fue aprobada. Contacta al administrador para más información.', '/perfil');
   res.json({ mensaje: 'Estado actualizado.', organizacion: rows[0] });
@@ -79,8 +81,8 @@ router.get('/donations', asyncHandler(async (req, res) => {
   const fecha = /^\d{4}-\d{2}-\d{2}$/;
   const params = [];
   let filtro = '';
-  if (fecha.test(req.query.desde || '')) { params.push(req.query.desde); filtro += ` AND d.fecha_publicacion >= $${params.length}::date`; }
-  if (fecha.test(req.query.hasta || '')) { params.push(req.query.hasta); filtro += ` AND d.fecha_publicacion < ($${params.length}::date + 1)`; }
+  if (fecha.test(req.query.desde || '')) { params.push(req.query.desde); filtro += ` AND (d.fecha_publicacion AT TIME ZONE 'America/Mexico_City')::date >= $${params.length}::date`; }
+  if (fecha.test(req.query.hasta || '')) { params.push(req.query.hasta); filtro += ` AND (d.fecha_publicacion AT TIME ZONE 'America/Mexico_City')::date <= $${params.length}::date`; }
   const limite = filtro ? 500 : 50;
   const { rows } = await pool.query(
     `SELECT d.id_donacion, d.titulo, d.categoria, d.kilos, d.estado, d.fecha_publicacion, d.fecha_caducidad,
@@ -113,8 +115,8 @@ router.get('/reports/donations.csv', asyncHandler(async (req, res) => {
   const fecha = /^\d{4}-\d{2}-\d{2}$/;
   const params = [];
   let filtro = '';
-  if (fecha.test(req.query.desde || '')) { params.push(req.query.desde); filtro += ` AND d.fecha_publicacion >= $${params.length}::date`; }
-  if (fecha.test(req.query.hasta || '')) { params.push(req.query.hasta); filtro += ` AND d.fecha_publicacion < ($${params.length}::date + 1)`; }
+  if (fecha.test(req.query.desde || '')) { params.push(req.query.desde); filtro += ` AND (d.fecha_publicacion AT TIME ZONE 'America/Mexico_City')::date >= $${params.length}::date`; }
+  if (fecha.test(req.query.hasta || '')) { params.push(req.query.hasta); filtro += ` AND (d.fecha_publicacion AT TIME ZONE 'America/Mexico_City')::date <= $${params.length}::date`; }
   const { rows } = await pool.query(
     `SELECT d.id_donacion, d.titulo, d.categoria, d.kilos, d.estado, d.fecha_publicacion, d.fecha_caducidad,
             ud.nombre AS donante, ur.nombre AS receptor, r.fecha_recogida

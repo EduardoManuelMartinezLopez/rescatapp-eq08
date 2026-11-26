@@ -164,7 +164,7 @@ export default function Mapa() {
               ))}
             </MapContainer>
             {sel && (
-              <div className="card p-5 mt-3 lg:absolute lg:bottom-4 lg:left-4 lg:right-4 lg:mt-0 z-[500]">
+              <div className="card p-5 mt-3 lg:absolute lg:bottom-4 lg:left-4 lg:right-4 lg:mt-0 lg:max-h-[55%] lg:overflow-y-auto z-[500]">
                 <div className="flex justify-between items-start gap-3">
                   <div>
                     <p className="text-xs font-bold text-primary uppercase">{sel.categoria} · {sel.donante_nombre}</p>
@@ -176,7 +176,7 @@ export default function Mapa() {
                     <button onClick={() => setSel(null)} className="w-10 h-10 rounded-full hover:bg-surface-container grid place-items-center" aria-label="Cerrar detalle"><Icon name="close" /></button>
                   </div>
                 </div>
-                <FotoDonacion id={sel.id_donacion} tiene={sel.tiene_foto} alto="h-36" className="mt-3" />
+                <FotoDonacion id={sel.id_donacion} tiene={sel.tiene_foto} alto="h-28" className="mt-3" />
                 <div className="mt-2 flex items-center gap-2 text-sm"><span className="text-on-surface-variant">Donante:</span><Estrellas promedio={sel.donante_promedio} /></div>
                 {sel.descripcion && <p className="mt-2 text-sm">{sel.descripcion}</p>}
                 <div className="mt-3 rounded-xl bg-secondary-container/25 p-3 text-sm space-y-1">

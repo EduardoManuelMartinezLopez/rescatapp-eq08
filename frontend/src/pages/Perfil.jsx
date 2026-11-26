@@ -8,6 +8,7 @@ import { Alerta, Campo, CampoPassword, CampoTelefono, Estrellas, Icon, Indicador
 import SelectorUbicacion from '../components/SelectorUbicacion.jsx';
 import Impacto from '../components/Impacto.jsx';
 import { fechaCorta } from '../utils.js';
+import { guardarCredencial } from '../lib/credenciales.js';
 
 const ROL = { receptor: 'Organización receptora', donante: 'Negocio donante', admin: 'Administrador' };
 
@@ -17,6 +18,7 @@ export default function Perfil() {
   const pwa = usePwa();
   const [f, setF] = useState({ nombre: usuario.nombre || '', telefono: usuario.telefono || '', direccion: usuario.direccion || '' });
   const [msg, setMsg] = useState(null);
+  const [errs, setErrs] = useState({}); // errores junto a cada campo (igual que en el registro)
   const [p, setP] = useState({ actual: '', nueva: '', repetir: '' });
   const [msgP, setMsgP] = useState(null);
   const [cal, setCal] = useState(null);
@@ -32,15 +34,21 @@ export default function Perfil() {
     e.preventDefault(); setMsg(null);
     // Mismas reglas que el servidor
     const esAdmin = usuario.rol === 'admin';
-    const malos = [validarNombre(f.nombre), validarTelefono(f.telefono, !esAdmin)];
-    if (!esAdmin || f.direccion) malos.push(validarDireccion(f.direccion));
-    if (f.direccion && f.direccion !== (usuario.direccion || '')) malos.push(validarUbicacion(punto?.[0], punto?.[1]));
-    const primero = malos.find(Boolean);
-    if (primero) return setMsg({ tipo: 'error', texto: primero });
+    const e2 = {};
+    const n = validarNombre(f.nombre); if (n) e2.nombre = n;
+    const t = validarTelefono(f.telefono, !esAdmin); if (t) e2.telefono = t;
+    const d = (!esAdmin || f.direccion) ? validarDireccion(f.direccion) : null; if (d) e2.direccion = d;
+    if (!e2.direccion && f.direccion && f.direccion !== (usuario.direccion || '')) { const u = validarUbicacion(punto?.[0], punto?.[1]); if (u) e2.direccion = u; }
+    setErrs(e2);
+    if (Object.keys(e2).length) return setMsg({ tipo: 'error', texto: 'Revisa los campos marcados en rojo.' });
     try {
       const d = await api('/auth/me', { method: 'PATCH', body: { ...f, ...(punto ? { latitud: punto[0], longitud: punto[1] } : {}) } });
       setUsuario({ ...usuario, ...d.usuario }); setMsg({ tipo: 'ok', texto: d.mensaje });
-    } catch (err) { setMsg({ tipo: 'error', texto: err.message }); }
+    } catch (err) {
+      // El servidor también puede rechazar el teléfono (por ejemplo, si ya lo usa otra cuenta): se muestra junto al campo
+      if (/tel[eé]fono/i.test(err.message)) { setErrs({ telefono: err.message }); setMsg({ tipo: 'error', texto: 'Revisa los campos marcados en rojo.' }); }
+      else setMsg({ tipo: 'error', texto: err.message });
+    }
   }
 
   async function cambiarPassword(e) {
@@ -50,6 +58,7 @@ export default function Perfil() {
     if (p.nueva !== p.repetir) return setMsgP({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' });
     try {
       const d = await api('/auth/password', { method: 'PATCH', body: { actual: p.actual, nueva: p.nueva } });
+      guardarCredencial(usuario.correo, p.nueva, usuario.nombre); // el navegador ofrece guardar la contraseña nueva
       setMsgP({ tipo: 'ok', texto: d.mensaje }); setP({ actual: '', nueva: '', repetir: '' });
       setUsuario({ ...usuario, password_definida: true });
     } catch (err) { setMsgP({ tipo: 'error', texto: err.message }); }
@@ -74,10 +83,12 @@ export default function Perfil() {
       <form onSubmit={guardar} noValidate className="card p-5 space-y-4">
         <h2 className="font-bold text-lg">Mis datos</h2>
         <Alerta tipo={msg?.tipo}>{msg?.texto}</Alerta>
-        <Campo etiqueta="Nombre"><input className="input" maxLength={100} value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></Campo>
-        <Campo etiqueta="Teléfono" ayuda="Se comparte solo tras apartar o recibir una donación."><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo>
-        <div><span className="block text-sm font-semibold mb-1">Dirección</span>
-          <SelectorUbicacion plegable requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => setF((x) => ({ ...x, direccion: v }))} punto={punto} onPunto={setPunto} /></div>
+        <p className="text-xs text-on-surface-variant -mt-2">Los campos marcados con * son obligatorios.</p>
+        <Campo etiqueta="Nombre *" error={errs.nombre}><input className="input" maxLength={100} value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></Campo>
+        <Campo etiqueta={usuario.rol === 'admin' ? 'Teléfono' : 'Teléfono *'} ayuda="Se comparte solo tras apartar o recibir una donación." error={errs.telefono}><CampoTelefono value={f.telefono} onChange={(v) => setF((x) => ({ ...x, telefono: v }))} /></Campo>
+        <div><span className="block text-sm font-semibold mb-1">{usuario.rol === 'admin' ? 'Dirección' : 'Dirección *'}</span>
+          <SelectorUbicacion plegable requerida={false} alto={240} direccion={f.direccion} onDireccion={(v) => setF((x) => ({ ...x, direccion: v }))} punto={punto} onPunto={setPunto} />
+          {errs.direccion && <p role="alert" className="text-xs font-semibold text-error mt-1">{errs.direccion}</p>}</div>
         <button className="btn-primary w-full">Guardar cambios</button>
       </form>
 

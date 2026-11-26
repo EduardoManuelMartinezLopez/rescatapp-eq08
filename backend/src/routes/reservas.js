@@ -32,6 +32,13 @@ router.post('/book', requerirRol('receptor'), asyncHandler(async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'La donación ya no está disponible (reservada, recogida o vencida).' });
     }
+    // Si esta organización ya canceló esta donación, no puede volver a apartarla (evita tarjetas canceladas repetidas)
+    const previa = await client.query(
+      "SELECT 1 FROM reservas WHERE id_donacion = $1 AND id_receptor = $2 AND estado = 'cancelada' LIMIT 1", [idDonacion, req.usuario.id]);
+    if (previa.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Ya cancelaste esta donación, por eso no puedes volver a apartarla. Otra organización podrá tomarla.' });
+    }
     const ins = await client.query(
       'INSERT INTO reservas (id_donacion, id_receptor) VALUES ($1,$2) RETURNING *', [idDonacion, req.usuario.id]);
     await client.query("UPDATE donaciones SET estado = 'reservada' WHERE id_donacion = $1", [idDonacion]);

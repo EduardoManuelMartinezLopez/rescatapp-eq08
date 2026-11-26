@@ -89,7 +89,7 @@ export default function AdminPanel() {
           <button className="btn-primary" onClick={bajarCsv}><Icon name="table_view" /> Descargar CSV</button>
           <button className="btn-ghost" onClick={imprimir}><Icon name="print" /> Imprimir / PDF</button>
         </div>
-        <p className="text-xs text-on-surface-variant">El CSV abre directo en Excel. El PDF imprime solo el reporte del rango elegido. Sin fechas incluye todo el historial.</p>
+        <p className="text-xs text-on-surface-variant">El CSV abre directo en Excel. El PDF imprime solo el reporte del rango elegido. Las fechas son de publicación y se cuentan en hora de México (el día completo, incluido el «Hasta»). Sin fechas incluye todo el historial.</p>
       </section>
 
       <div className="grid lg:grid-cols-2 gap-4">
@@ -123,7 +123,8 @@ export default function AdminPanel() {
       </div>
 
       <section className="card p-5 overflow-x-auto">
-        <h2 className="font-bold text-lg mb-3">Últimas donaciones registradas</h2>
+        <h2 className="font-bold text-lg">Últimas 50 donaciones registradas</h2>
+        <p className="text-xs text-on-surface-variant mb-3">Es solo un resumen de las más recientes. Para ver todo el historial o un periodo, usa «Reportes» (CSV o PDF) con las fechas que necesites.</p>
         <table className="w-full text-sm min-w-[640px]">
           <thead><tr className="text-left text-on-surface-variant border-b border-outline-variant">
             <th className="py-2">Alimento</th><th>Donante</th><th>Receptor</th><th>Kilos</th><th>Publicada</th><th>Estado</th></tr></thead>

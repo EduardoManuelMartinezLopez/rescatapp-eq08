@@ -59,6 +59,7 @@ export default function Campana() {
     const ruta = destino(n, usuario?.rol);
     if (ruta) nav(ruta);
   }
+  async function quitarLeidas() { await api('/notifications/read', { method: 'DELETE' }).catch(() => {}); cargar(); }
   async function todas() { await api('/notifications/read-all', { method: 'PATCH' }).catch(() => {}); cargar(); }
 
   return (
@@ -71,7 +72,10 @@ export default function Campana() {
         <div className="absolute left-3 right-3 top-full mt-2 sm:left-auto sm:right-0 sm:top-auto sm:w-[360px] card shadow-xl overflow-hidden animate-pop z-[1500]">
           <div className="flex justify-between items-center px-4 py-3 border-b border-outline-variant/60">
             <b>Notificaciones</b>
-            {datos.no_leidas > 0 && <button onClick={todas} className="text-sm font-semibold text-primary">Marcar todas</button>}
+            <span className="flex gap-3">
+              {datos.no_leidas > 0 && <button onClick={todas} className="text-sm font-semibold text-primary">Marcar todas</button>}
+              {datos.notificaciones.some((n) => n.leida) && <button onClick={quitarLeidas} className="text-sm font-semibold text-on-surface-variant">Quitar leídas</button>}
+            </span>
           </div>
           <ul className="max-h-[60vh] overflow-y-auto">
             {datos.notificaciones.length === 0 && <li className="p-6 text-center text-sm text-on-surface-variant">Sin notificaciones por ahora.</li>}

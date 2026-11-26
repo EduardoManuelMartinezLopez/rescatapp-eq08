@@ -23,7 +23,7 @@ Node.js + Express + PostgreSQL. Autenticación con JWT (HS256) y contraseñas co
 | GET | /api/donations/mine | donante | Mis donaciones |
 | GET | /api/donations/:id/foto | público | Foto de la donación |
 | POST | /api/donations/publish | donante | Publicar donación (con foto opcional) |
-| DELETE | /api/donations/:id | donante | Retirar donación no reservada |
+| DELETE | /api/donations/:id | donante | Borrar donación no reservada |
 | POST | /api/reservations/book | receptor aprobado | Apartar (transacción, 409 si ya fue apartada) |
 | GET | /api/reservations/mine | receptor | Mis reservas |
 | PATCH | /api/reservations/:id/pickup | donante | Confirmar recolección |
