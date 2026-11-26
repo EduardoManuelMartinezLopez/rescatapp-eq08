@@ -61,7 +61,7 @@
                 "exec": [
                   "pm.test(\"Código de estado 201\", function () { pm.response.to.have.status(201); });",
                   "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });",
-                  "pm.test(\"No devuelve el hash\", function () { pm.expect(JSON.stringify(pm.response.json())).to.not.include(\"password\"); });"
+                  "pm.test(\"No devuelve el hash\", function () { pm.expect(JSON.stringify(pm.response.json())).to.not.include(\"password_hash\"); });"
                 ]
               }
             },
@@ -70,7 +70,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.collectionVariables.set(\"emailNuevo\", \"prueba\"+Date.now()+\"@rescatapp.test\");"
+                  "pm.collectionVariables.set(\"emailNuevo\", \"prueba\"+Date.now()+\"@rescatapp.test\");",
+                  "pm.collectionVariables.set(\"telNuevo\", \"951\"+String(Date.now()).slice(-7));",
+                  "pm.collectionVariables.set(\"telPerfil\", \"952\"+String(Date.now()+7).slice(-7));"
                 ]
               }
             }
@@ -96,7 +98,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"Tienda de prueba\",\"correo\":\"{{emailNuevo}}\",\"password\":\"Prueba1234\",\"rol\":\"donante\",\"telefono\":\"9510000001\",\"direccion\":\"Oaxaca\"}"
+              "raw": "{\"nombre\":\"Tienda de prueba\",\"correo\":\"{{emailNuevo}}\",\"password\":\"Nueva1234\",\"rol\":\"donante\",\"telefono\":\"{{telNuevo}}\",\"direccion\":\"Calle Macedonio Alcalá 100, Centro, Oaxaca\",\"latitud\":17.0732,\"longitud\":-96.7266,\"acepta_terminos\":true}"
             },
             "auth": {
               "type": "noauth"
@@ -138,7 +140,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Duplicado\",\n  \"correo\": \"admin@rescatapp.test\",\n  \"password\": \"Prueba1234\",\n  \"rol\": \"donante\"\n}"
+              "raw": "{\"nombre\":\"Cuenta duplicada\",\"correo\":\"admin@rescatapp.test\",\"password\":\"Nueva1234\",\"rol\":\"donante\",\"telefono\":\"9515550101\",\"direccion\":\"Calle Macedonio Alcalá 100, Centro, Oaxaca\",\"latitud\":17.0732,\"longitud\":-96.7266,\"acepta_terminos\":true}"
             },
             "auth": {
               "type": "noauth"
@@ -2257,7 +2259,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"correo\":\"{{emailNuevo}}\",\"password\":\"Prueba1234\"}"
+              "raw": "{\"correo\":\"{{emailNuevo}}\",\"password\":\"Nueva1234\"}"
             },
             "auth": {
               "type": "noauth"
@@ -2299,7 +2301,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Tienda de prueba actualizada\",\n  \"telefono\": \"951 000 0000\",\n  \"direccion\": \"Oaxaca de Juárez\"\n}"
+              "raw": "{\n  \"nombre\": \"Tienda de prueba actualizada\",\n  \"telefono\": \"{{telPerfil}}\",\n  \"direccion\": \"Oaxaca de Juárez\",\n  \"latitud\":17.0732,\"longitud\":-96.7266\n}"
             },
             "auth": {
               "type": "bearer",
@@ -3142,6 +3144,529 @@
                 {
                   "key": "token",
                   "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Versión final: correo, borrado y validaciones",
+      "item": [
+        {
+          "name": "Registro con contraseña que contiene el nombre (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Tienda Sol\",\"correo\":\"sol.tienda@rescatapp.test\",\"password\":\"TiendaSol123\",\"rol\":\"donante\",\"telefono\":\"9515550102\",\"direccion\":\"Calle Macedonio Alcalá 100, Centro, Oaxaca\",\"latitud\":17.0732,\"longitud\":-96.7266,\"acepta_terminos\":true}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Registro con ubicación fuera de Oaxaca (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Tienda Lejana\",\"correo\":\"lejana@rescatapp.test\",\"password\":\"Nueva1234\",\"rol\":\"donante\",\"telefono\":\"9515550103\",\"direccion\":\"Calle Reforma 100, Ciudad de México\",\"latitud\":19.4326,\"longitud\":-99.1332,\"acepta_terminos\":true}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Registro sin aceptar el aviso de privacidad (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Tienda Norte\",\"correo\":\"norte@rescatapp.test\",\"password\":\"Nueva1234\",\"rol\":\"donante\",\"telefono\":\"9515550104\",\"direccion\":\"Calle Macedonio Alcalá 100, Centro, Oaxaca\",\"latitud\":17.0732,\"longitud\":-96.7266}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Confirmar correo con token inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\":\"no-es-un-token\"}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Descartar cuenta con token inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/discard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "discard"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\":\"no-es-un-token\"}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Reenviar confirmación sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Reenviar confirmación con correo ya confirmado (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenDonante}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Borrar donación sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Borrar donación inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "999999"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenDonante}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Borrar donación siendo receptor (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenReceptor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Marcar una notificación como leída: id inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/999999/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "999999",
+                "read"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenDonante}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Borrar las notificaciones leídas (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenDonante}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Calificaciones de un usuario (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de estado 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Responde en menos de 1000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ratings/user/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ratings",
+                "user",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenDonante}}",
                   "type": "string"
                 }
               ]
