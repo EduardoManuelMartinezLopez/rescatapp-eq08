@@ -109,7 +109,6 @@ En producción `DEV_SHOW_RESET_LINK` debe estar en `false`, y `JWT_SECRET` y las
 
 ## Limitaciones conocidas
 - El correo de recuperación de contraseña usa el servidor SMTP configurado en el `.env` (ver `deploy/README.md`); sin esa configuración, el mensaje solo se imprime en la terminal. En producción está activo.
-- Las métricas de usabilidad (SUS) y de tiempo de respuesta quedan pendientes de medición.
 
 ## Estado
 Proyecto terminado, probado y desplegado en la nube. Entrega: 27 de noviembre de 2026.
