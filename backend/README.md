@@ -12,17 +12,20 @@ Node.js + Express + PostgreSQL. Autenticación con JWT (HS256) y contraseñas co
 ## Endpoints
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
-| POST | /api/auth/register | público | Crear cuenta (donante o receptor; el receptor queda pendiente) |
+| POST | /api/auth/register | público | Crear cuenta (donante o receptor; el receptor queda pendiente). Exige teléfono, dirección en Oaxaca y aceptar el aviso de privacidad |
 | POST | /api/auth/login | público | Iniciar sesión |
 | POST | /api/auth/google | público | Iniciar sesión / registrarse con Google |
 | POST | /api/auth/forgot | público | Pedir enlace para restablecer contraseña |
 | POST | /api/auth/reset | público | Restablecer contraseña con el token del enlace |
+| POST | /api/auth/verify | público | Confirmar el correo con el token del enlace (24 h) |
+| POST | /api/auth/discard | público | «No fui yo»: eliminar una cuenta sin confirmar |
+| POST | /api/auth/resend-verification | autenticado | Reenviar el correo de confirmación |
 | GET / PATCH | /api/auth/me | autenticado | Ver / editar perfil |
 | PATCH | /api/auth/password | autenticado | Cambiar contraseña |
 | GET | /api/donations | autenticado | Donaciones disponibles (`?categoria=`, `?q=`) |
 | GET | /api/donations/mine | donante | Mis donaciones |
 | GET | /api/donations/:id/foto | público | Foto de la donación |
-| POST | /api/donations/publish | donante | Publicar donación (con foto opcional) |
+| POST | /api/donations/publish | donante | Publicar donación (con foto opcional; requiere correo confirmado) |
 | DELETE | /api/donations/:id | donante | Borrar donación no reservada |
 | POST | /api/reservations/book | receptor aprobado | Apartar (transacción, 409 si ya fue apartada) |
 | GET | /api/reservations/mine | receptor | Mis reservas |
@@ -32,6 +35,7 @@ Node.js + Express + PostgreSQL. Autenticación con JWT (HS256) y contraseñas co
 | GET | /api/ratings/user/:id | autenticado | Promedio y reseñas |
 | GET | /api/notifications | autenticado | Mis notificaciones |
 | PATCH | /api/notifications/read-all, /:id/read | autenticado | Marcar como leídas |
+| DELETE | /api/notifications/read | autenticado | Borrar las notificaciones leídas |
 | GET | /api/impact/mine | autenticado | Impacto estimado (comidas, CO2e) |
 | GET | /api/admin/metrics | admin | Indicadores reales + impacto |
 | GET | /api/admin/organizations | admin | Receptores (`?estado=`) |
@@ -40,9 +44,9 @@ Node.js + Express + PostgreSQL. Autenticación con JWT (HS256) y contraseñas co
 | GET | /api/admin/reports/donations.csv | admin | Reporte descargable (`?desde=&hasta=`) |
 
 ## Pruebas
-**Postman:** importar `postman/RescatApp.postman_collection.json` y ejecutarla con *Collection Runner* (con `DEV_SHOW_RESET_LINK=true` en `.env`).
+**Postman:** importar `postman/RescatApp.postman_collection.json` (81 solicitudes, 183 comprobaciones) y ejecutarla con *Collection Runner*, con la API en marcha, la base cargada con `database/rescatapp_database.sql` y `DEV_SHOW_RESET_LINK=true` en `.env`. Las cuentas de demostración son las del script SQL.
 
-**Automáticas (`npm test`):** usan una base aparte para no ensuciar la demo.
+**Automáticas (`npm test`, 46 pruebas):** usan una base aparte para no ensuciar la demo.
 1. En pgAdmin crea la base `rescatapp_test` y ejecuta en ella `database/rescatapp_database.sql`.
 2. `npm test`
 
