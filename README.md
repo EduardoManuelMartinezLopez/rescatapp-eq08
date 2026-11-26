@@ -24,8 +24,8 @@ Autor: Eduardo Manuel Martinez Lopez. Docente: Adelina Martinez Nieto.
 |---|---|
 | Frontend | React 18, Vite, Tailwind CSS, React Router, React-Leaflet (mapas) |
 | Backend | Node.js, Express, pg, jsonwebtoken (JWT, 8 h), bcryptjs, nodemailer, cors, dotenv |
-| Base de datos | PostgreSQL 16 (6 tablas) |
-| Pruebas | node:test (23 pruebas automáticas) y colección de Postman |
+| Base de datos | PostgreSQL 16 (7 tablas) |
+| Pruebas | node:test (46 pruebas automáticas) y colección de Postman |
 | Despliegue | AWS EC2 (Ubuntu 24.04), nginx, Let's Encrypt, PM2 |
 | Control de versiones | Git y GitHub (Projects para el tablero de tareas) |
 
@@ -35,25 +35,25 @@ Programación Extrema (XP) con 5 iteraciones de una semana (26 de octubre al 27 
 ## Estructura
 | Carpeta | Contenido |
 |---|---|
-| `database/` | Script SQL de PostgreSQL (6 tablas, restricciones y datos de demostración) |
+| `database/` | Script SQL de PostgreSQL (7 tablas, restricciones y datos de demostración) |
 | `backend/` | API REST (Node.js + Express), pruebas automáticas y colección de Postman |
 | `frontend/` | Aplicación web (React + Vite + Tailwind) |
 | `docs/` | Páginas públicas (privacidad y términos), diseños de las pantallas y modelo relacional |
 | `deploy/` | Configuración de nginx y PM2, scripts de actualización y de respaldo, guía de despliegue |
 
 ## Base de datos
-Seis tablas: `usuarios`, `donaciones`, `reservas`, `calificaciones`, `notificaciones` y `password_resets`. Todas las relaciones son de uno a muchos. Un índice único parcial (`uq_reserva_vigente`) impide que una donación tenga más de una reserva vigente.
+Siete tablas: `usuarios`, `donaciones`, `reservas`, `calificaciones`, `notificaciones`, `password_resets` y `verificaciones_correo`. Todas las relaciones son de uno a muchos. Un índice único parcial (`uq_reserva_vigente`) impide que una donación tenga más de una reserva vigente.
 
 ## API
-29 rutas bajo `/api`, más `GET /api/health` para comprobar que el servicio responde.
+33 rutas bajo `/api`, más `GET /api/health` para comprobar que el servicio responde.
 
 | Módulo | Rutas |
 |---|---|
-| `auth` | 8 (registro, inicio de sesión, Google, recuperación y perfil) |
+| `auth` | 11 (registro, inicio de sesión, Google, recuperación, confirmación del correo y perfil) |
 | `donaciones` | 6 |
 | `reservas` | 4 |
 | `calificaciones` | 2 |
-| `notificaciones` | 3 |
+| `notificaciones` | 4 |
 | `impacto` | 1 |
 | `admin` | 5 |
 
